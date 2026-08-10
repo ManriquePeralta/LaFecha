@@ -1,7 +1,7 @@
 import { PLACEHOLDER_LOGO, CURRENT_SEASON, SPLIT_SEASON_MIN_YEAR } from "./config.js";
 import { db, state } from "./state.js";
 import { standingsSections, playoffList, playoffBox, annualBody, averagesBody, annualBox, averagesBox, $, isDetailPage } from "./dom.js";
-import { bySearch, normalize } from "./utils.js";
+import { bySearch, normalize, computeLiveStandings } from "./utils.js";
 import { seasonTypeCache } from "./season-types.js";
 import { renderMatches } from "./render-matches.js";
 
@@ -53,24 +53,35 @@ function updateTableContext() {
 
 function renderStandingsAndCrosses() {
   updateTableContext();
-  const liga = db[state.category];
-  const zonasRaw = Array.isArray(liga.zonas) && liga.zonas.length ? liga.zonas : [{ nombre: "Tabla general", tabla: liga.tabla || [] }];
+  const liga = db[state.category] || {};
+  
+  // Unificamos los partidos disponibles en db para calcular la tabla en vivo
+  const currentMatches = [
+    ...(liga.resultados || []),
+    ...(liga.allMatches || [])
+  ];
+
+  const zonasRaw = Array.isArray(liga.zonas) && liga.zonas.length 
+    ? liga.zonas 
+    : [{ nombre: "Tabla general", tabla: liga.tabla || [] }];
 
   const zonas = zonasRaw
-    .map((z) => ({ nombre: z.nombre, tabla: (z.tabla || []).filter((r) => bySearch(r.equipo)) }))
-    .filter((z) => z.tabla.length);
+    .map((z) => {
+      // PROCESAMOS LA TABLA EN VIVO ANTES DE FILTRAR
+      const liveTable = computeLiveStandings(z.tabla || [], currentMatches);
 
-  if (!zonas.length) {
-    standingsSections.innerHTML = '<article class="empty">No hay tabla disponible en la API para esta categoria.</article>';
-    playoffList.innerHTML = '<article class="empty">Sin cruces para mostrar.</article>';
-    return zonasRaw;
-  }
+      return {
+        nombre: z.nombre,
+        tabla: liveTable.filter((r) => bySearch(r.equipo))
+      };
+    })
+    .filter((z) => z.tabla.length);
 
   standingsSections.innerHTML = zonas
     .map((zona) => {
       const rows = zona.tabla
         .map((row, idx) => {
-          const pos = row.rank || idx + 1;
+          const pos = idx + 1;
           const rowClass = pos <= 8 ? "playoff" : "";
           return `
             <tr class="${rowClass}">

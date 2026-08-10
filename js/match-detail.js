@@ -152,7 +152,7 @@ function pitchPlayerHtml(player) {
     <div class="${classes.join(" ")}">
       <span class="pitch-jersey">${jersey || "•"}</span>
       <span class="pitch-name">${displayName}</span>
-      ${positionLabel ? positionLabel : ""}
+      ${positionLabel ? `<span class="pitch-position">${positionLabel}</span>` : ""}
     </div>
   `;
 }

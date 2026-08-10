@@ -69,10 +69,11 @@ function renderMatches() {
   matchesList.innerHTML = groups
     .map(
       (g) => `
-        <div class="match-date-group">
-          <p class="match-date-heading">${g.fecha}</p>
-          ${g.items.map((m) => matchCardHtml(m, state.view)).join("")}
+        <div class="day-divider">
+          <span class="day-label">${g.fecha}</span>
+          <span class="day-count">${g.items.length} partido${g.items.length === 1 ? "" : "s"}</span>
         </div>
+        ${g.items.map((m) => matchCardHtml(m, state.view)).join("")}
       `
     )
     .join("");

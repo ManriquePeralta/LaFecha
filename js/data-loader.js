@@ -145,13 +145,25 @@ async function loadCategoryData(category, forced = false) {
       loadAnnualAndAverages(category, state.season)
     ]);
 
-    const parsedMatches = parseScoreboard(scoreRes);
+const parsedMatches = parseScoreboard(scoreRes);
 
+    // 1. Guardamos primero los partidos procesados
     db[category].resultados = parsedMatches.resultados;
     db[category].proximos = parsedMatches.proximos;
     db[category].allMatches = parsedMatches.all;
-    db[category].tabla = tableResult?.tabla || [];
-    db[category].zonas = tableResult?.zonas || [];
+
+    // 2. Extraemos las tablas crudas de la API
+    const rawTabla = tableResult?.tabla || [];
+    const rawZonas = tableResult?.zonas || [];
+
+    // 3. RECONCILIACIÓN AUTOMÁTICA: Corregimos los olvidos de la API (ej: Tristán Suárez)
+    db[category].tabla = reconcileStandingsWithMatches(rawTabla, parsedMatches.all);
+
+    db[category].zonas = rawZonas.map((zona) => ({
+      ...zona,
+      tabla: reconcileStandingsWithMatches(zona.tabla || [], parsedMatches.all)
+    }));
+
     db[category].annual = annualAverages.annual;
     db[category].averages = annualAverages.averages;
 
@@ -176,5 +188,69 @@ async function loadCategoryData(category, forced = false) {
     }
   }
 }
+export function reconcileStandingsWithMatches(standings, matches) {
+  if (!Array.isArray(standings) || !standings.length) return standings;
+  if (!Array.isArray(matches) || !matches.length) return standings;
+
+  const updatedTable = JSON.parse(JSON.stringify(standings));
+
+  // Helper para limpiar nombres y abreviaturas comunes (ej: T. Suárez -> Tristan Suarez)
+  const cleanName = (str) =>
+    normalize(str || "")
+      .replace(/^t\.\s*/, "tristan ")
+      .replace(/^g\.\s*/, "gimnasia ")
+      .replace(/\(j\)/, "")
+      .trim();
+
+  matches.forEach((match) => {
+    const isCompleted = match.estado === "FINAL" || match.status === "COMPLETED";
+    if (!isCompleted) return;
+
+    const localNorm = cleanName(match.local || match.equipoLocal);
+    const visitNorm = cleanName(match.visitante || match.equipoVisitante);
+
+    const homeTeam = updatedTable.find((t) => {
+      const name = cleanName(t.equipo);
+      return name === localNorm || name.includes(localNorm) || localNorm.includes(name);
+    });
+
+    const awayTeam = updatedTable.find((t) => {
+      const name = cleanName(t.equipo);
+      return name === visitNorm || name.includes(visitNorm) || visitNorm.includes(name);
+    });
+
+    if (homeTeam && awayTeam) {
+      // Marcamos una bandera interna para no procesar dos veces el mismo partido
+      if (!match._reconciled) {
+        const gl = Number(match.gl ?? match.golesLocal ?? 0);
+        const gv = Number(match.gv ?? match.golesVisitante ?? 0);
+
+        // Si Tristán Suárez o el ganador tienen menos PJ o si los puntos no reflejan el partido de hoy:
+        // Evaluamos si el equipo visitante (Tristán) necesita el impacto
+        if (gv > gl && awayTeam.pj <= homeTeam.pj) {
+          awayTeam.pts += 3;
+          awayTeam.pj += 1;
+          awayTeam.dg += (gv - gl);
+          homeTeam.dg -= (gv - gl);
+        } else if (gl > gv && homeTeam.pj <= awayTeam.pj) {
+          homeTeam.pts += 3;
+          homeTeam.pj += 1;
+          homeTeam.dg += (gl - gv);
+          awayTeam.dg -= (gl - gv);
+        } else if (gl === gv) {
+          // Empate si faltaba actualizar
+          if (homeTeam.pj < awayTeam.pj) { homeTeam.pts += 1; homeTeam.pj += 1; }
+          if (awayTeam.pj < homeTeam.pj) { awayTeam.pts += 1; awayTeam.pj += 1; }
+        }
+
+        match._reconciled = true;
+      }
+    }
+  });
+
+  // Reordenar la tabla por Puntos y Diferencia de Gol
+  return updatedTable.sort((a, b) => b.pts - a.pts || b.dg - a.dg);
+}
+
 
 export { setDate, setLiveBanner, saveCache, loadCache, torneosForYear, loadAnnualAndAverages, loadCategoryData, hasLiveMatch };

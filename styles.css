@@ -836,3 +836,201 @@ tr.row-descenso {
     box-shadow: 0 0 0 0 rgba(195, 29, 31, 0);
   }
 }
+
+/* ---------- Selector de torneo / temporada ---------- */
+
+.table-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.6rem;
+}
+
+.table-controls .search-wrap {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+#season-select {
+  border: 1.5px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-body);
+  font-weight: 700;
+  padding: 0.5rem 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+#season-select:hover {
+  border-color: var(--ink);
+}
+
+#season-select:focus-visible {
+  border-color: var(--ink);
+  outline: none;
+}
+
+.table-context {
+  margin: 0 0 0.75rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.box-note {
+  margin: -0.25rem 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+/* ---------- Modal de detalle de partido ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(24, 20, 15, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-box {
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  max-width: 34rem;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1.4rem;
+  position: relative;
+  box-shadow: var(--shadow-raised);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.7rem;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius);
+}
+
+.modal-close:hover {
+  background: var(--paper-dim);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+  margin-bottom: 0.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--ink);
+}
+
+.modal-header .team-with-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+}
+
+.modal-score {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.modal-meta {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  margin: 0.5rem 0 1.1rem;
+}
+
+.modal-loading {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.modal-section {
+  margin-top: 1.1rem;
+}
+
+.modal-section .sub-title {
+  margin-bottom: 0.5rem;
+}
+
+.detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.detail-list li {
+  font-size: 0.88rem;
+  padding: 0.28rem 0;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.empty-inline {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+}
+
+.lineups-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.lineups-grid h4 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .lineups-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-controls {
+    align-items: stretch;
+  }
+}

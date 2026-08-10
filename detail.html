@@ -6,13 +6,20 @@
     <title>Detalle del partido - Promiedos AR</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto+Condensed:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <style>
+      /*
+        Estilos propios de la pagina de detalle de partido. Todo lo que ya
+        vive en styles.css (modal-header, modal-score, modal-meta,
+        modal-section, empty-inline) NO se repite aca: esta hoja solo cubre
+        layout de la pagina (hero, volver) y los componentes nuevos que
+        introdujo el detalle con cancha (resumen, eventos, formacion).
+      */
+
       body.detail-page {
         background:
-          radial-gradient(circle at top left, rgba(195, 29, 31, 0.16), transparent 34%),
-          radial-gradient(circle at bottom right, rgba(31, 107, 58, 0.18), transparent 30%),
+          radial-gradient(circle at top left, rgba(31, 107, 58, 0.08), transparent 40%),
           var(--paper);
       }
 
@@ -30,7 +37,7 @@
       .detail-hero {
         padding: 1rem 1.05rem 0.85rem;
         border-bottom: 1px solid var(--rule);
-        background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
       }
 
       .detail-topline {
@@ -39,8 +46,31 @@
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
-        margin-bottom: 0.8rem;
       }
+
+      .detail-eyebrow {
+        margin: 0;
+      }
+
+      .detail-body {
+        padding: 1rem 1.05rem 1.15rem;
+      }
+
+      .detail-article {
+        max-width: 980px;
+        margin: 0 auto;
+      }
+
+      .detail-loading,
+      .detail-empty {
+        margin: 0;
+        padding: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      /* ---------- Mastil secundario ---------- */
 
       .detail-brand {
         display: flex;
@@ -59,7 +89,7 @@
       .detail-back {
         display: inline-flex;
         align-items: center;
-        gap: 0.45rem;
+        gap: 0.4rem;
         text-decoration: none;
         color: var(--ink);
         border: 1.5px solid var(--ink);
@@ -71,6 +101,11 @@
         font-weight: 700;
         font-size: 0.82rem;
         background: transparent;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+
+      .detail-back::before {
+        content: "←";
       }
 
       .detail-back:hover {
@@ -78,80 +113,45 @@
         color: var(--paper-raised);
       }
 
-      .detail-body {
-        padding: 1rem 1.05rem 1.15rem;
-      }
-
-      .detail-article {
-        max-width: 980px;
-        margin: 0 auto;
-      }
-
-      .detail-loading,
-      .detail-empty {
-        margin: 0;
-        padding: 1rem 0;
-        font-family: var(--font-body);
-        color: var(--ink-soft);
-      }
-
-      .detail-empty {
-        opacity: 0.75;
-      }
-
-      .match-header-page {
-        margin-bottom: 1rem;
-      }
+      /* ---------- Cabecera del partido ---------- */
 
       .match-detail-page .modal-header {
         gap: 1rem;
+        padding-bottom: 0.65rem;
+        border-bottom: 2px solid var(--ink);
       }
 
       .match-detail-page .modal-score {
-        font-size: clamp(2rem, 6vw, 3.2rem);
+        font-size: clamp(2.1rem, 6vw, 3.2rem);
       }
 
-      .modal-header {
+      .match-detail-page .modal-meta {
+        margin: 0.5rem 0 0;
+      }
+
+      /* ---------- Resumen (goles / amarillas / rojas) ---------- */
+
+      .match-summary-card {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 0.35rem;
+        flex-wrap: wrap;
+        gap: 1.2rem;
+        margin: 0.9rem 0 0;
+        padding: 0.55rem 0.8rem;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+        background: var(--paper-dim);
       }
 
-      .modal-header .team-with-logo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .modal-score {
-        font-family: "Teko", sans-serif;
-        font-size: 1.6rem;
-        font-weight: 700;
+      .match-summary-card span {
+        font-family: var(--font-mono);
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ink-soft);
         white-space: nowrap;
       }
 
-      .modal-meta {
-        margin: 0 0 1rem;
-        opacity: 0.7;
-        font-size: 0.85rem;
-      }
-
-      .modal-loading {
-        margin: 0;
-        opacity: 0.7;
-        font-style: italic;
-      }
-
-      .modal-section {
-        margin-top: 18px;
-      }
-
-      .modal-section .sub-title {
-        margin-bottom: 8px;
-      }
+      /* ---------- Timeline de eventos (goles / tarjetas) ---------- */
 
       .event-list {
         list-style: none;
@@ -159,23 +159,27 @@
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.15rem;
       }
 
       .event-row {
         display: grid;
-        grid-template-columns: 3.8rem 1.1rem 1fr;
+        grid-template-columns: 3rem 1.1rem 1fr;
         align-items: start;
-        gap: 0.55rem;
-        padding: 0.45rem 0;
-        border-bottom: 1px dashed rgba(24, 20, 15, 0.12);
+        gap: 0.6rem;
+        padding: 0.42rem 0;
+        border-bottom: 1px dashed var(--rule);
+      }
+
+      .event-row:last-child {
+        border-bottom: none;
       }
 
       .event-minute {
         font-family: var(--font-mono);
         font-weight: 700;
         color: var(--ink-faint);
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         text-align: right;
         white-space: nowrap;
       }
@@ -193,8 +197,10 @@
         position: absolute;
         inset: 0;
         border-radius: 50%;
-        background: radial-gradient(circle at 35% 35%, #fff 0 18%, #111 19% 21%, #fff 22% 24%, #111 25% 27%, transparent 28%), #f8f8f8;
-        border: 1px solid rgba(17, 17, 17, 0.55);
+        background:
+          radial-gradient(circle at 35% 35%, #fff 0 18%, var(--ink) 19% 21%, #fff 22% 24%, var(--ink) 25% 27%, transparent 28%),
+          #f8f8f8;
+        border: 1px solid rgba(24, 20, 15, 0.5);
       }
 
       .event-yellow .event-icon::before,
@@ -207,25 +213,28 @@
       }
 
       .event-yellow .event-icon::before {
-        background: #f3cd2b;
-        box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.18) inset;
+        background: var(--gold);
+        box-shadow: 0 0 0 1px rgba(24, 20, 15, 0.2) inset;
       }
 
       .event-red .event-icon::before {
-        background: #c31d1f;
-        box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.18) inset;
+        background: var(--red);
+        box-shadow: 0 0 0 1px rgba(24, 20, 15, 0.2) inset;
       }
 
       .event-substitution .event-icon::before {
-        background: linear-gradient(180deg, #1f6b3a 0 50%, #ece7d8 50% 100%);
-        border: 1px solid rgba(24, 20, 15, 0.28);
+        background: linear-gradient(180deg, var(--pitch) 0 50%, var(--paper) 50% 100%);
+        border: 1px solid var(--rule-strong);
       }
 
       .event-text {
         color: var(--ink);
-        font-size: 0.92rem;
+        font-family: var(--font-body);
+        font-size: 0.9rem;
         line-height: 1.35;
       }
+
+      /* ---------- Formacion / cancha ---------- */
 
       .pitch-grid {
         display: grid;
@@ -234,10 +243,11 @@
       }
 
       .pitch-card {
-        border: 1px solid rgba(24, 20, 15, 0.14);
-        border-radius: 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
         overflow: hidden;
-        background: rgba(255, 255, 255, 0.35);
+        background: var(--paper-raised);
+        box-shadow: var(--shadow-card);
       }
 
       .pitch-card-head {
@@ -245,19 +255,22 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 0.75rem;
-        padding: 0.65rem 0.75rem;
-        border-bottom: 1px solid rgba(24, 20, 15, 0.12);
-        background: rgba(255, 255, 255, 0.55);
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid var(--rule);
+        background: var(--paper-dim);
       }
 
       .pitch-card-head h4 {
-        font-size: 0.95rem;
         margin: 0;
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--ink);
       }
 
       .pitch-card-head span {
         font-family: var(--font-mono);
-        font-size: 0.68rem;
+        font-size: 0.66rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--ink-soft);
@@ -265,13 +278,48 @@
 
       .pitch-surface {
         position: relative;
-        min-height: 30rem;
+        min-height: 26rem;
         padding: 0.85rem 0.75rem;
         background:
-          linear-gradient(90deg, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.1) 50%),
-          linear-gradient(180deg, rgba(31, 107, 58, 0.98), rgba(19, 84, 44, 0.98));
-        background-size: 100% 100%, 100% 100%;
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.09) 50%),
+          linear-gradient(180deg, var(--pitch), #143f26);
         overflow: hidden;
+      }
+
+      .pitch-stripes {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045) 0,
+          rgba(255, 255, 255, 0.045) 2.8rem,
+          rgba(255, 255, 255, 0.02) 2.8rem,
+          rgba(255, 255, 255, 0.02) 5.6rem
+        );
+        pointer-events: none;
+      }
+
+      .pitch-midline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-0.5px);
+        pointer-events: none;
+      }
+
+      .pitch-circle {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 5.2rem;
+        height: 5.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
       }
 
       .pitch-row {
@@ -294,182 +342,60 @@
         justify-content: space-evenly;
       }
 
-      .pitch-stripes {
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-          180deg,
-          rgba(255,255,255,0.04) 0,
-          rgba(255,255,255,0.04) 2.8rem,
-          rgba(255,255,255,0.02) 2.8rem,
-          rgba(255,255,255,0.02) 5.6rem
-        );
-        pointer-events: none;
-      }
-
-      .pitch-midline {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: rgba(255,255,255,0.28);
-        transform: translateY(-0.5px);
-        pointer-events: none;
-      }
-
-      .pitch-circle {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        width: 5.4rem;
-        height: 5.4rem;
-        border: 1px solid rgba(255,255,255,0.24);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-      }
-
       .pitch-player {
         z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.14rem;
-        width: 5.2rem;
+        gap: 0.12rem;
+        width: 5rem;
         text-align: center;
       }
 
+      .pitch-player-goalkeeper {
+        width: 4.8rem;
+      }
+
       .pitch-jersey {
-        min-width: 1.8rem;
-        padding: 0.18rem 0.34rem;
-        border-radius: 0.35rem;
-        background: rgba(255,255,255,0.96);
-        color: #191919;
-        font-size: 0.78rem;
-        font-weight: 800;
+        min-width: 1.7rem;
+        padding: 0.16rem 0.32rem;
+        border-radius: 3px;
+        background: var(--paper-raised);
+        color: var(--ink);
+        font-family: var(--font-mono);
+        font-size: 0.76rem;
+        font-weight: 700;
         line-height: 1;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+
+      .pitch-player-defender .pitch-jersey {
+        background: #f0ede2;
+      }
+
+      .pitch-player-forward .pitch-jersey {
+        background: #fff6dc;
       }
 
       .pitch-name {
         color: #fff;
-        font-size: 0.68rem;
-        line-height: 1.05;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.28);
+        font-family: var(--font-body);
+        font-size: 0.66rem;
         font-weight: 700;
+        line-height: 1.05;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
       }
 
       .pitch-position {
-        color: rgba(255,255,255,0.82);
-        font-size: 0.58rem;
-        line-height: 1;
+        color: rgba(255, 255, 255, 0.78);
+        font-family: var(--font-mono);
+        font-size: 0.56rem;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .pitch-player-goalkeeper {
-        width: 5rem;
-      }
-
-      .pitch-player-defender .pitch-jersey {
-        background: #f2f2f2;
-      }
-
-      .pitch-player-midfielder .pitch-jersey {
-        background: #fff;
-      }
-
-      .pitch-player-forward .pitch-jersey {
-        background: #fff9e8;
-      }
-
-      .pitch-line {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.45rem;
-        margin-bottom: 0.65rem;
-      }
-
-      .pitch-chip {
-        padding: 0.28rem 0.55rem;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.95);
-        color: var(--ink);
-        font-family: var(--font-body);
-        font-size: 0.74rem;
+        letter-spacing: 0.05em;
         line-height: 1;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.18);
-        max-width: 100%;
-        text-align: center;
       }
 
-      .pitch-line:first-child .pitch-chip {
-        background: rgba(255,255,255,0.98);
-        font-weight: 700;
-      }
-
-      .detail-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .detail-list li {
-        font-size: 0.9rem;
-        padding: 4px 0;
-        border-bottom: 1px dashed rgba(255,255,255,0.08);
-      }
-
-      .empty-inline {
-        opacity: 0.6;
-        font-size: 0.85rem;
-      }
-
-      .lineups-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-      }
-
-      .lineups-grid h4 {
-        margin: 0 0 6px;
-        font-size: 0.9rem;
-      }
-
-      @media (max-width: 480px) {
-        .lineups-grid { grid-template-columns: 1fr; }
-      }
-
-      .match-detail-page .modal-meta {
-        margin-bottom: 0;
-      }
-
-      .match-detail-page .sub-title {
-        font-size: 0.74rem;
-      }
-
-      .match-detail-page .detail-list li {
-        color: var(--ink);
-      }
-
-      .match-detail-page .empty-inline {
-        color: var(--ink-soft);
-      }
-
-      .match-detail-page .lineups-grid h4 {
-        color: var(--ink);
-      }
-
-      .match-detail-page .match-summary-card {
-        margin-top: 0.9rem;
-      }
+      /* ---------- Responsive ---------- */
 
       @media (max-width: 900px) {
         .pitch-grid {
@@ -485,6 +411,10 @@
         .detail-back {
           width: 100%;
           justify-content: center;
+        }
+
+        .match-summary-card {
+          gap: 0.7rem 1rem;
         }
       }
     </style>
@@ -502,9 +432,7 @@
       <section class="panel detail-panel match-detail-page">
         <div class="detail-hero">
           <div class="detail-topline">
-            <div>
-              <p class="table-context" style="margin:0;">Detalle del partido</p>
-            </div>
+            <p class="table-context detail-eyebrow">Detalle del partido</p>
           </div>
         </div>
         <div id="match-detail-page" class="detail-body">

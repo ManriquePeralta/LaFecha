@@ -1,0 +1,838 @@
+/*
+  PROMIEDOS AR — sistema de diseño
+  ---------------------------------
+  Direccion: pagina de fixture de diario deportivo argentino (linaje Ole /
+  cronica de cancha), no un dashboard de SaaS. Papel de diario, tinta negra,
+  rojo de mastil, verde de cancha. Los partidos se agrupan por fecha con un
+  "dateline" tipografico grueso: es el elemento firma de la pagina y resuelve
+  la necesidad real (separar resultados/proximos por dia) con un recurso
+  editorial, no decorativo.
+
+  Paleta:
+    --paper        #ece7d8  fondo, papel de diario
+    --paper-raised #f7f4ea  tarjetas / superficies elevadas ("hoja limpia")
+    --ink          #18140f  texto principal, mastil
+    --ink-soft     #6d6353  texto secundario
+    --rule         #cfc6ab  filetes / divisores
+    --red          #c31d1f  tinta de mastil, en vivo, descenso
+    --pitch        #1f6b3a  verde de cancha: puntero / clasificacion directa
+    --orange       #c1631f  Libertadores
+    --sky          #2f7fae  Sudamericana / playoffs
+    --gold         #b3841a  acentos puntuales (hover, foco)
+
+  Tipografia:
+    Teko            titulares condensados (ya se usaba, se refuerza el rol)
+    Roboto Condensed  cuerpo de texto, columnas densas de diario
+    Space Mono      "tipo agate": minutos, resultados, tablas de posiciones
+*/
+
+:root {
+  --paper: #69ac48;
+  --paper-raised: #e2e2e2;
+  --paper-dim: #e2dcc8;
+  --ink: #22201e;
+  --ink-soft: #0a0a0a;
+  --ink-faint: #080808;
+  --rule: #cfc6ab;
+  --rule-strong: #b7ac8c;
+  --red: #c31d1f;
+  --red-dim: #8f1517;
+  --pitch: #1f6b3a;
+  --orange: #c1631f;
+  --sky: #2f7fae;
+  --gold: #b3841a;
+
+  --font-display: "Teko", sans-serif;
+  --font-body: "Roboto Condensed", sans-serif;
+  --font-mono: "Space Mono", "Roboto Condensed", monospace;
+
+  --radius: 3px;
+  --shadow-card: 0 1px 0 var(--rule), 0 8px 18px -14px rgba(24, 20, 15, 0.35);
+  --shadow-raised: 0 18px 40px -20px rgba(24, 20, 15, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(rgba(24, 20, 15, 0.07) 0.6px, transparent 0.6px);
+  background-size: 10px 10px;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper-raised);
+}
+
+:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+/* ---------- Mastil / topbar ---------- */
+
+.topbar {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.5rem 1.1rem 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  border-bottom: 3px solid var(--ink);
+  position: relative;
+}
+
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
+.brand-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.brand-kicker {
+  margin: 0;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.68rem;
+}
+
+.brand-title {
+  font-size: clamp(2.4rem, 7vw, 4.1rem);
+  letter-spacing: 0.01em;
+  line-height: 0.86;
+  text-transform: uppercase;
+}
+
+.topbar-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.date-pill {
+  margin: 0;
+  text-transform: capitalize;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+  padding: 0.4rem 0;
+}
+
+.refresh-btn {
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.82rem;
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.refresh-btn:hover {
+  background: var(--ink);
+  color: var(--paper-raised);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--ink);
+}
+
+/* ---------- Layout general ---------- */
+
+.layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.1rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+}
+
+.panel {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.05rem 1.15rem;
+}
+
+.panel-controls {
+  grid-column: span 12;
+}
+
+.panel-matches {
+  grid-column: span 6;
+}
+
+.panel-table {
+  grid-column: span 6;
+}
+
+.section-title-wrap {
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.35rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.section-title {
+  letter-spacing: 0.01em;
+  font-size: 1.7rem;
+  text-transform: uppercase;
+}
+
+/* ---------- Reveal / entrada ---------- */
+
+.reveal {
+  animation: riseIn 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.panel-matches.reveal {
+  animation-delay: 0.06s;
+}
+
+.panel-table.reveal {
+  animation-delay: 0.12s;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
+/* ---------- Boletin en vivo ---------- */
+
+.live-banner {
+  margin: 0 0 0.85rem;
+  background: var(--ink);
+  color: var(--paper-raised);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-banner::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: 0 0 auto;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-banner::before {
+    animation: none;
+  }
+}
+
+/* ---------- Tabs / segmentado ---------- */
+
+.segmented {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.segment-btn {
+  border: 1.5px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.segment-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.segment-btn.active,
+.segment-btn[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper-raised);
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset, 0 4px 10px -8px rgba(24, 20, 15, 0.6);
+}
+
+.segment-btn.active::after,
+.segment-btn[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: -4px;
+  height: 3px;
+  background: var(--red);
+}
+
+.segment-btn:focus-visible {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(195, 29, 31, 0.16);
+}
+
+.segment-btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.view-switch {
+  margin-top: 0.85rem;
+}
+
+/* ---------- Toolbar: busqueda + toggle ---------- */
+
+.toolbar {
+  margin-top: 0.85rem;
+  display: flex;
+  gap: 0.85rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 16rem;
+  flex: 1;
+}
+
+.search-wrap span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.search-wrap input {
+  width: 100%;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-body);
+  padding: 0.5rem 0.65rem;
+  transition: border-color 0.15s ease;
+}
+
+.search-wrap input:focus {
+  border-color: var(--ink);
+  outline: none;
+}
+
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding-bottom: 0.55rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.toggle-wrap input {
+  accent-color: var(--red);
+  width: 16px;
+  height: 16px;
+}
+
+.toggle-wrap.disabled-toggle {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ---------- Lista de partidos + dateline por dia ---------- */
+
+.matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.day-divider {
+  margin: 0.85rem 0 0.4rem;
+  padding-bottom: 0.28rem;
+  border-bottom: 2px solid var(--ink);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.day-divider:first-child {
+  margin-top: 0;
+}
+
+.day-label {
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.day-count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.match-card {
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  border-radius: 0;
+  padding: 0.55rem 0.15rem;
+}
+
+.match-card.clickable {
+  cursor: pointer;
+  transition: background 0.12s ease, padding-left 0.12s ease;
+}
+
+.match-card.clickable:hover,
+.match-card.clickable:focus-visible {
+  background: var(--paper-dim);
+  padding-left: 0.4rem;
+  transform: none;
+  box-shadow: none;
+}
+
+.match-card.live {
+  background: rgba(195, 29, 31, 0.06);
+  border-bottom-color: rgba(195, 29, 31, 0.35);
+}
+
+.teams,
+.meta {
+  margin: 0;
+}
+
+.teams-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.team-with-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.team-logo {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper-raised);
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.vs {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.teams strong {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.meta {
+  margin-top: 0.28rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+
+.badge-final::before {
+  background: var(--ink-soft);
+}
+
+.badge-scheduled::before {
+  background: var(--sky);
+}
+
+.badge-live {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.badge-live::before {
+  background: var(--red);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-live::before {
+    animation: none;
+  }
+}
+
+.detail {
+  color: var(--ink-faint);
+}
+
+/* ---------- Tablas de posiciones ---------- */
+
+.standings-sections {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.zone-block {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sub-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.35rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 20rem;
+  font-family: var(--font-mono);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.34rem 0.4rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.82rem;
+}
+
+th {
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+  width: 8%;
+  color: var(--ink-faint);
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+  width: 54%;
+  font-family: var(--font-body);
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+  width: 12%;
+}
+
+.cell-pts {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+tbody tr {
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+tbody tr:hover {
+  background: var(--paper-dim);
+}
+
+tr.playoff td:first-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+tr.playoff {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+
+tr.row-leader {
+  box-shadow: inset 3px 0 0 var(--pitch);
+}
+
+tr.row-libertadores {
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+
+tr.row-sudamericana {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+
+tr.row-descenso {
+  box-shadow: inset 3px 0 0 var(--red);
+}
+
+/* ---------- Playoffs / anual / promedios ---------- */
+
+.playoff-box {
+  margin-top: 0.9rem;
+  border: none;
+  border-top: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 0.75rem 0 0;
+  background: transparent;
+}
+
+.playoff-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cross-card {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  background: var(--paper-raised);
+}
+
+.cross-card .teams {
+  font-size: 0.88rem;
+}
+
+.cross-card .meta {
+  margin-top: 0.2rem;
+}
+
+/* ---------- Estado vacio ---------- */
+
+.empty {
+  margin: 0;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 0.95rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+/* ---------- Referencias / leyenda ---------- */
+
+.legend {
+  margin-top: 0.85rem;
+  display: flex;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.7rem;
+}
+
+.legend-item {
+  position: relative;
+  padding-left: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+.legend-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.legend-item.leader::before {
+  background: var(--pitch);
+}
+
+.legend-item.libertadores::before {
+  background: var(--orange);
+}
+
+.legend-item.sudamericana::before {
+  background: var(--sky);
+}
+
+.legend-item.descenso::before {
+  background: var(--red);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 920px) {
+  .panel-matches,
+  .panel-table {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-matches,
+  .panel-table,
+  .panel-controls {
+    grid-column: span 1;
+  }
+
+  .panel-matches {
+    order: 2;
+  }
+
+  .panel-table {
+    order: 3;
+  }
+}
+
+@media (max-width: 650px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search-wrap {
+    min-width: 100%;
+  }
+
+  .day-divider {
+    flex-wrap: wrap;
+  }
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(195, 29, 31, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(195, 29, 31, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(195, 29, 31, 0);
+  }
+}

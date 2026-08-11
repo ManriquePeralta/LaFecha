@@ -24,6 +24,13 @@
     Teko            titulares condensados (ya se usaba, se refuerza el rol)
     Roboto Condensed  cuerpo de texto, columnas densas de diario
     Space Mono      "tipo agate": minutos, resultados, tablas de posiciones
+
+  ------------------------------------------------------------------------
+  NOTA DE ESTA PASADA: colores y tipografias INTACTOS, ni un hex tocado.
+  Todo lo nuevo es hover / animacion / glassmorphism. Donde el glass
+  necesita transparencia, se deriva con color-mix() de la MISMA variable
+  (no se inventa ningun color nuevo) — ver lista de 18 mejoras al final
+  de la respuesta.
 */
 
 :root {
@@ -57,6 +64,7 @@
 
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -130,6 +138,13 @@ h1, h2, h3, h4 {
   letter-spacing: 0.01em;
   line-height: 0.86;
   text-transform: uppercase;
+  transition: letter-spacing 0.3s ease;
+}
+
+/* Mejora 1: el titulo "respira" un toque de tracking al pasar el mouse
+   por el mastil entero, sin tocar tipografia ni color. */
+.topbar:hover .brand-title {
+  letter-spacing: 0.03em;
 }
 
 .topbar-right {
@@ -148,6 +163,18 @@ h1, h2, h3, h4 {
   color: var(--ink-soft);
   letter-spacing: 0.01em;
   padding: 0.4rem 0;
+  transition: color 0.2s ease;
+}
+
+/* Mejora 2: pastilla de fecha en vidrio esmerilado (glassmorphism real,
+   transparencia derivada de --paper-raised con color-mix). */
+.date-pill {
+  padding: 0.4rem 0.7rem;
+  background: color-mix(in srgb, var(--paper-raised) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--rule-strong) 70%, transparent);
+  border-radius: 999px;
 }
 
 .refresh-btn {
@@ -162,12 +189,23 @@ h1, h2, h3, h4 {
   color: var(--ink);
   border-radius: var(--radius);
   padding: 0.5rem 0.85rem;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .refresh-btn:hover {
   background: var(--ink);
   color: var(--paper-raised);
+  /* Mejora 3: elevacion + sombra al pasar el mouse (antes era un cambio
+     de color seco, sin ninguna sensacion de profundidad). */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised);
+}
+
+/* Mejora 4: el boton "cede" al click, como un boton fisico. */
+.refresh-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .refresh-btn:disabled {
@@ -175,6 +213,17 @@ h1, h2, h3, h4 {
   cursor: not-allowed;
   background: transparent;
   color: var(--ink);
+  transform: none;
+  box-shadow: none;
+  /* Mejora 5: mientras dice "Actualizando...", un pulso suave en vez de
+     quedar inerte — comunica "esto esta vivo" sin texto adicional. */
+  animation: softPulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn:disabled {
+    animation: none;
+  }
 }
 
 /* ---------- Layout general ---------- */
@@ -190,11 +239,23 @@ h1, h2, h3, h4 {
 }
 
 .panel {
-  background: var(--paper-raised);
+  /* Mejora 6: panel de vidrio esmerilado — transparencia derivada de
+     --paper-raised con color-mix (mismo color, distinta opacidad) +
+     blur real detras. */
+  background: color-mix(in srgb, var(--paper-raised) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
   padding: 1rem 1.05rem 1.15rem;
+  transition: box-shadow 0.25s ease;
+}
+
+/* Mejora 7: el panel entero profundiza su sombra si el mouse esta en
+   cualquier parte de el, dandole una sensacion sutil de "estar mas cerca". */
+.panel:hover {
+  box-shadow: 0 2px 0 var(--rule), 0 14px 30px -16px rgba(24, 20, 15, 0.45);
 }
 
 .panel-controls {
@@ -307,12 +368,17 @@ h1, h2, h3, h4 {
   letter-spacing: 0.03em;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease,
+    transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .segment-btn:hover {
   border-color: var(--ink);
   color: var(--ink);
+  /* Mejora 8: mismo tratamiento de elevacion que el boton actualizar, para
+     que toda la pagina "responda" de forma consistente al hover. */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -10px rgba(24, 20, 15, 0.5);
 }
 
 .segment-btn.active,
@@ -322,6 +388,35 @@ h1, h2, h3, h4 {
   color: var(--paper-raised);
   position: relative;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset, 0 4px 10px -8px rgba(24, 20, 15, 0.6);
+  overflow: hidden;
+}
+
+/* Mejora 9: brillo diagonal que atraviesa la pestana activa una sola vez
+   cuando se activa (glassmorphism aplicado como micro-interaccion, no
+   solo como fondo estatico). */
+.segment-btn.active::before,
+.segment-btn[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: sweepOnce 1s ease-out;
+}
+
+@keyframes sweepOnce {
+  from { left: -60%; }
+  to { left: 130%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment-btn.active::before,
+  .segment-btn[aria-selected="true"]::before {
+    animation: none;
+    display: none;
+  }
 }
 
 .segment-btn.active::after,
@@ -343,6 +438,8 @@ h1, h2, h3, h4 {
 .segment-btn:disabled {
   opacity: 0.4;
   pointer-events: none;
+  transform: none;
+  box-shadow: none;
 }
 
 .view-switch {
@@ -383,12 +480,18 @@ h1, h2, h3, h4 {
   font: inherit;
   font-family: var(--font-body);
   padding: 0.5rem 0.65rem;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.search-wrap input:hover {
+  border-color: var(--ink-soft);
 }
 
 .search-wrap input:focus {
   border-color: var(--ink);
   outline: none;
+  /* Mejora 10: anillo de foco suave animado en vez de un salto brusco. */
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
 .toggle-wrap {
@@ -406,6 +509,12 @@ h1, h2, h3, h4 {
   accent-color: var(--red);
   width: 16px;
   height: 16px;
+  transition: transform 0.15s ease;
+}
+
+/* Mejora 11: el check "salta" apenas al tildarse. */
+.toggle-wrap input:checked {
+  transform: scale(1.15);
 }
 
 .toggle-wrap.disabled-toggle {
@@ -459,19 +568,51 @@ h1, h2, h3, h4 {
   background: transparent;
   border-radius: 0;
   padding: 0.55rem 0.15rem;
+  position: relative;
+  overflow: hidden;
 }
 
 .match-card.clickable {
   cursor: pointer;
-  transition: background 0.12s ease, padding-left 0.12s ease;
+  transition: background 0.15s ease, padding-left 0.15s ease,
+    transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .match-card.clickable:hover,
 .match-card.clickable:focus-visible {
   background: var(--paper-dim);
-  padding-left: 0.4rem;
-  transform: none;
-  box-shadow: none;
+  padding-left: 0.5rem;
+  /* Mejora 12: antes "transform: none" mataba cualquier elevacion — ahora
+     la tarjeta se levanta un poco y proyecta sombra, como una ficha que
+     se despega del papel. */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -12px rgba(24, 20, 15, 0.5);
+}
+
+/* Mejora 13: brillo tipo vidrio que barre la tarjeta al pasar el mouse
+   (glassmorphism como micro-interaccion, no solo fondo translucido). */
+.match-card.clickable::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-12deg);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+
+.match-card.clickable:hover::after,
+.match-card.clickable:focus-visible::after {
+  left: 130%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-card.clickable::after {
+    display: none;
+  }
 }
 
 .match-card.live {
@@ -505,6 +646,13 @@ h1, h2, h3, h4 {
   background: var(--paper-raised);
   object-fit: cover;
   flex: 0 0 auto;
+  transition: transform 0.2s ease;
+}
+
+/* Mejora 14: los escudos crecen apenas al pasar el mouse por la tarjeta
+   (detalle chico, pero le da vida a algo que hoy es completamente estatico). */
+.match-card.clickable:hover .team-logo {
+  transform: scale(1.12);
 }
 
 .vs {
@@ -706,6 +854,15 @@ tr.row-descenso {
   border-radius: var(--radius);
   padding: 0.5rem 0.6rem;
   background: var(--paper-raised);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* Mejora 17: los cruces de playoff tambien elevan al pasar el mouse
+   (antes eran el unico bloque interactivo de la pagina sin ningun hover). */
+.cross-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--ink-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .cross-card .teams {
@@ -747,6 +904,7 @@ tr.row-descenso {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ink-soft);
+  transition: color 0.15s ease;
 }
 
 .legend-item::before {
@@ -757,6 +915,18 @@ tr.row-descenso {
   width: 8px;
   height: 8px;
   border-radius: 2px;
+  transition: transform 0.15s ease;
+}
+
+/* Mejora 18: el punto de color de la leyenda "salta" y el texto se
+   oscurece al pasar el mouse, para que la leyenda se sienta interactiva
+   aunque no dispare ninguna accion. */
+.legend-item:hover {
+  color: var(--ink);
+}
+
+.legend-item:hover::before {
+  transform: scale(1.35);
 }
 
 .legend-item.leader::before {
@@ -837,6 +1007,15 @@ tr.row-descenso {
   }
 }
 
+@keyframes softPulse {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 /* ---------- Selector de torneo / temporada ---------- */
 
 .table-controls {
@@ -862,11 +1041,16 @@ tr.row-descenso {
   font-weight: 700;
   padding: 0.5rem 0.65rem;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.1s ease;
 }
 
 #season-select:hover {
   border-color: var(--ink);
+}
+
+/* Mejora 19: leve "click" visual al abrir el selector. */
+#season-select:active {
+  transform: scale(0.98);
 }
 
 #season-select:focus-visible {
@@ -897,18 +1081,32 @@ tr.row-descenso {
   inset: 0;
   z-index: 1000;
   background: rgba(24, 20, 15, 0.55);
+  /* Mejora 20: blur del fondo detras del modal — glassmorphism aplicado
+     al overlay, no solo a las tarjetas. */
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  animation: overlayFadeIn 0.2s ease both;
 }
 
 .modal-overlay.hidden {
   display: none;
 }
 
+@keyframes overlayFadeIn {
+  from { background: rgba(24, 20, 15, 0); backdrop-filter: blur(0); -webkit-backdrop-filter: blur(0); }
+  to { background: rgba(24, 20, 15, 0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+}
+
 .modal-box {
-  background: var(--paper-raised);
+  /* Mejora 21: la caja del modal tambien es vidrio esmerilado, con blur
+     de verdad detras (se nota especialmente con el overlay difuminado). */
+  background: color-mix(in srgb, var(--paper-raised) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
   color: var(--ink);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
@@ -919,6 +1117,26 @@ tr.row-descenso {
   padding: 1.4rem;
   position: relative;
   box-shadow: var(--shadow-raised);
+  /* Mejora 22: entrada con pop sutil en vez de aparecer de golpe. */
+  animation: modalPop 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-box {
+    animation: none;
+  }
 }
 
 .modal-close {
@@ -933,10 +1151,14 @@ tr.row-descenso {
   cursor: pointer;
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius);
+  transition: background 0.15s ease, transform 0.2s ease;
 }
 
 .modal-close:hover {
   background: var(--paper-dim);
+  /* Mejora 23: la cruz gira al pasar el mouse, un guino chico de que es
+     un boton de cerrar, no solo un simbolo estatico. */
+  transform: rotate(90deg);
 }
 
 .modal-header {
@@ -998,8 +1220,18 @@ tr.row-descenso {
 
 .detail-list li {
   font-size: 0.88rem;
-  padding: 0.28rem 0;
+  padding: 0.28rem 0.2rem;
   border-bottom: 1px dashed var(--rule);
+  border-radius: 2px;
+  transition: background 0.15s ease, padding-left 0.15s ease;
+}
+
+/* Mejora 24: cada evento del partido (gol/tarjeta) resalta al pasar el
+   mouse, igual que las tarjetas de partido, para que el modal se sienta
+   parte de la misma pagina y no una superposicion aparte. */
+.detail-list li:hover {
+  background: var(--paper-dim);
+  padding-left: 0.4rem;
 }
 
 .empty-inline {

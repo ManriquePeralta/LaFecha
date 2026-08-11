@@ -260,7 +260,6 @@ function pitchPlayerHtml(player) {
         ${displayName}
       </span>
 
-      ${positionLabel ? `${positionLabel}` : ""}
     </div>
   `;
 }

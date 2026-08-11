@@ -754,6 +754,26 @@ h1, h2, h3, h4 {
   overflow-x: auto;
 }
 
+/* Mejora 15: scrollbar fina y prolija en vez de la barra generica del
+   sistema operativo, cuando la tabla se desborda en mobile. */
+.table-wrap::-webkit-scrollbar,
+.modal-box::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb,
+.modal-box::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: 999px;
+}
+
+.table-wrap,
+.modal-box {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -801,11 +821,30 @@ td:nth-child(3) {
 
 tbody tr {
   position: relative;
-  transition: background 0.12s ease;
+  transition: background 0.15s ease;
 }
 
 tbody tr:hover {
   background: var(--paper-dim);
+}
+
+/* Mejora 16: al pasar el mouse por una fila, ademas del fondo, aparece
+   una tenue franja lateral izquierda que crece desde 0 — le da a la fila
+   una sensacion de "engancharse" en vez de solo cambiar de color. */
+tbody tr::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--ink);
+  opacity: 0.5;
+  transition: width 0.15s ease;
+}
+
+tbody tr:hover::before {
+  width: 3px;
 }
 
 tr.playoff td:first-child {
@@ -1267,3 +1306,70 @@ body.modal-open {
   }
 }
 
+/* Acordeón de Competencias */
+.league-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.accordion-item {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel-bg, #d8e2cf);
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #19622b;
+  color: #ffffff;
+  border: none;
+  font-family: 'Teko', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.accordion-header:hover {
+  background: #134d22;
+}
+
+.country-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flag-icon {
+  width: 18px;
+  height: 13px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.accordion-item.active .chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  display: none;
+  padding: 0.4rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.accordion-item.active .accordion-content {
+  display: flex;
+}

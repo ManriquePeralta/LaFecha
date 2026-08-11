@@ -3,75 +3,71 @@ import { db, state } from "./state.js";
 import { matchesTitle, matchesList } from "./dom.js";
 import { bySearch } from "./utils.js";
 
-
 // ==========================================
-// HTML DE CADA PARTIDO
+// HTML DE CADA PARTIDO (COMPATIBLE AFA Y ESPN)
 // ==========================================
 
 function matchCardHtml(m, view) {
+  // Normalización de propiedades (AFA vs ESPN)
+  const localName = m.local || m.homeName || "Local";
+  const visitanteName = m.visitante || m.awayName || "Visitante";
+  const localLogo = m.localLogo || m.homeLogo || PLACEHOLDER_LOGO;
+  const visitanteLogo = m.visitanteLogo || m.awayLogo || PLACEHOLDER_LOGO;
+  const gl = m.gl ?? m.homeScore ?? "-";
+  const gv = m.gv ?? m.awayScore ?? "-";
+
+  const isLive =
+    m.isLive ||
+    m.estado === "En juego" ||
+    m.estado === "EN JUEGO" ||
+    m.estado === "En vivo" ||
+    m.estado === "EN VIVO" ||
+    m.status === "LIVE" ||
+    m.status === "IN_PLAY";
+
+  const isFinal =
+    m.isCompleted ||
+    m.estado === "Final" ||
+    m.estado === "FINAL" ||
+    m.status === "COMPLETED";
+
+  const badgeClass = isLive
+    ? "badge-live"
+    : isFinal
+      ? "badge-final"
+      : "badge-scheduled";
 
   // ========================================
-  // RESULTADOS
+  // TIEMPO DE JUEGO / HORA
+  // ========================================
+
+  let liveTime = "";
+
+  if (isLive) {
+    if (m.tiempoJuego) {
+      liveTime = `<span class="live-time">${m.tiempoJuego}</span>`;
+    } else {
+      const minute = m.minuto ?? m.minute ?? m.elapsed ?? m.min ?? null;
+      const second = m.segundo ?? m.second ?? m.seconds ?? 0;
+
+      if (minute !== null) {
+        liveTime = `<span class="live-time">${minute}:${String(second).padStart(2, "0")}</span>`;
+      } else {
+        liveTime = `<span class="live-time">EN VIVO</span>`;
+      }
+    }
+  }
+
+  const horaFormat = m.hora || (m.dateIso ? new Date(m.dateIso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "");
+  const statusText = isLive
+    ? `EN VIVO${liveTime ? ` · ${liveTime}` : ""}`
+    : m.estado || (isFinal ? "Finalizado" : "Programado");
+
+  // ========================================
+  // TARJETA PARA RESULTADOS / FINALIZADOS
   // ========================================
 
   if (view === "resultados") {
-
-    const isLive =
-      m.estado === "En juego" ||
-      m.estado === "EN JUEGO" ||
-      m.estado === "En vivo" ||
-      m.estado === "EN VIVO" ||
-      m.status === "LIVE" ||
-      m.status === "IN_PLAY";
-
-    const isFinal =
-      m.estado === "Final" ||
-      m.estado === "FINAL" ||
-      m.status === "COMPLETED";
-
-
-    const badgeClass =
-      isLive
-        ? "badge-live"
-        : isFinal
-          ? "badge-final"
-          : "badge-scheduled";
-
-
-    let liveTime = "";
-
-    if (isLive) {
-      if (m.tiempoJuego) {
-        liveTime = `<span class="live-time">${m.tiempoJuego}</span>`;
-      } else {
-        const minute =
-          m.minuto ??
-          m.minute ??
-          m.elapsed ??
-          m.min ??
-          null;
-
-        const second =
-          m.segundo ??
-          m.second ??
-          m.seconds ??
-          0;
-
-        if (minute !== null) {
-          liveTime = `<span class="live-time">${minute}:${String(second).padStart(2, "0")}</span>`;
-        } else {
-          liveTime = `<span class="live-time">EN VIVO</span>`;
-        }
-      }
-    }
-
-
-    const statusText =
-      isLive
-        ? `EN VIVO${liveTime ? ` · ${liveTime}` : ""}`
-        : m.estado;
-
-
     return `
       <article
         class="match-card clickable ${isLive ? "live" : ""}"
@@ -80,58 +76,43 @@ function matchCardHtml(m, view) {
         role="button"
         aria-label="Ver detalle del partido"
       >
-
         <p class="teams teams-line">
-
-          <span class="team-with-logo team-link" data-team-name="${m.local}">
+          <span class="team-with-logo">
             <img
               class="team-logo"
-              src="${m.localLogo || PLACEHOLDER_LOGO}"
+              src="${localLogo}"
               alt=""
             />
-            <strong>${m.local}</strong>
+            <strong>${localName}</strong>
           </span>
 
-          <span class="vs">
-            vs
-          </span>
+          <span class="vs">vs</span>
 
-          <span class="team-with-logo team-link" data-team-name="${m.visitante}">
+          <span class="team-with-logo">
             <img
               class="team-logo"
-              src="${m.visitanteLogo || PLACEHOLDER_LOGO}"
+              src="${visitanteLogo}"
               alt=""
             />
-            <strong>${m.visitante}</strong>
+            <strong>${visitanteName}</strong>
           </span>
-
         </p>
 
         <p class="meta">
-
-          <strong>
-            ${m.gl} - ${m.gv}
-          </strong>
+          <strong>${gl} - ${gv}</strong>
 
           <span class="status ${badgeClass}">
             ${statusText}
           </span>
 
-          ${
-            !isLive && m.hora
-              ? `<span class="detail">${m.hora}</span>`
-              : ""
-          }
-
+          ${!isLive && horaFormat ? `<span class="detail">${horaFormat}</span>` : ""}
         </p>
-
       </article>
     `;
   }
 
-
   // ========================================
-  // PRÓXIMOS PARTIDOS
+  // TARJETA PARA PRÓXIMOS PARTIDOS
   // ========================================
 
   return `
@@ -142,72 +123,68 @@ function matchCardHtml(m, view) {
       role="button"
       aria-label="Ver detalle del partido"
     >
-
       <p class="teams teams-line">
-
-        <span class="team-with-logo team-link" data-team-name="${m.local}">
+        <span class="team-with-logo">
           <img
             class="team-logo"
-            src="${m.localLogo || PLACEHOLDER_LOGO}"
+            src="${localLogo}"
             alt=""
           />
-          <strong>${m.local}</strong>
+          <strong>${localName}</strong>
         </span>
 
-        <span class="vs">
-          vs
-        </span>
+        <span class="vs">vs</span>
 
-        <span class="team-with-logo team-link" data-team-name="${m.visitante}">
+        <span class="team-with-logo">
           <img
             class="team-logo"
-            src="${m.visitanteLogo || PLACEHOLDER_LOGO}"
+            src="${visitanteLogo}"
             alt=""
           />
-          <strong>${m.visitante}</strong>
+          <strong>${visitanteName}</strong>
         </span>
-
       </p>
 
       <p class="meta">
-
-        ${m.hora}
+        ${horaFormat}
 
         <span class="status badge-scheduled">
           Programado
         </span>
 
-        ${
-          m.detalle
-            ? m.detalle
-            : ""
-        }
-
+        ${m.detalle ? m.detalle : ""}
       </p>
-
     </article>
   `;
 }
-
 
 // ==========================================
 // AGRUPAR POR FECHA
 // ==========================================
 
 function groupByFecha(matches) {
-
   const groups = [];
-
   let lastFecha = null;
 
   matches.forEach((m) => {
+    // Generar string de fecha legible si viene desde ISO (ESPN)
+    let fechaLabel = m.fecha;
+    if (!fechaLabel && m.dateIso) {
+      fechaLabel = new Date(m.dateIso).toLocaleDateString("es-AR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long"
+      });
+      // Capitalizar primer letra del día
+      fechaLabel = fechaLabel.charAt(0).toUpperCase() + fechaLabel.slice(1);
+    }
 
-    if (m.fecha !== lastFecha) {
+    if (!fechaLabel) fechaLabel = "Partidos";
 
-      lastFecha = m.fecha;
-
+    if (fechaLabel !== lastFecha) {
+      lastFecha = fechaLabel;
       groups.push({
-        fecha: m.fecha,
+        fecha: fechaLabel,
         items: []
       });
     }
@@ -218,126 +195,103 @@ function groupByFecha(matches) {
   return groups;
 }
 
-
 // ==========================================
 // RENDER DE PARTIDOS
 // ==========================================
 
 function renderMatches() {
+  if (!matchesList) return;
 
-  const liga =
-    db[state.category];
+  // ========================================
+  // SELECCIÓN DE ORIGEN DE DATOS
+  // ========================================
 
-  const source =
-    liga[state.view] || [];
+  let source = [];
 
+  if (state.isEspnLeague) {
+    source = state.currentMatches || [];
+  } else {
+    const liga = db[state.category] || {};
+    source = liga[state.view] || [];
+  }
 
   // ========================================
   // TÍTULO
   // ========================================
 
-  matchesTitle.textContent =
-    state.view === "resultados"
-      ? "Resultados"
-      : state.view === "proximos"
-        ? "Proximos"
-        : "Resumen";
-
+  if (matchesTitle) {
+    matchesTitle.textContent =
+      state.view === "resultados"
+        ? "Resultados"
+        : state.view === "proximos"
+          ? "Proximos"
+          : "Resumen";
+  }
 
   // ========================================
-  // TABLA
+  // VISTA TABLA
   // ========================================
 
   if (state.view === "tabla") {
-
-    matchesList.innerHTML =
-      "Selecciona Resultados o Proximos para ver partidos.";
-
+    matchesList.innerHTML = "Selecciona Resultados o Proximos para ver partidos.";
     return;
   }
 
-
   // ========================================
-  // FILTROS
+  // FILTROS (BÚSQUEDA Y SOLO EN JUEGO)
   // ========================================
 
-  const filtered =
-    source.filter((m) => {
+  const filtered = source.filter((m) => {
+    const local = m.local || m.homeName || "";
+    const visitante = m.visitante || m.awayName || "";
 
-      const liveOk =
-        !state.liveOnly ||
-        m.estado === "En juego" ||
-        m.estado === "EN JUEGO" ||
-        m.estado === "En vivo" ||
-        m.estado === "EN VIVO" ||
-        m.status === "LIVE" ||
-        m.status === "IN_PLAY";
+    const liveOk =
+      !state.liveOnly ||
+      m.isLive ||
+      m.estado === "En juego" ||
+      m.estado === "EN JUEGO" ||
+      m.estado === "En vivo" ||
+      m.estado === "EN VIVO" ||
+      m.status === "LIVE" ||
+      m.status === "IN_PLAY";
 
-      return (
-        liveOk &&
-        bySearch(
-          m.local,
-          m.visitante
-        )
-      );
-    });
-
+    return liveOk && bySearch(local, visitante);
+  });
 
   // ========================================
   // SIN PARTIDOS
   // ========================================
 
   if (!filtered.length) {
-
-    matchesList.innerHTML =
-      "No hay partidos en la API para ese filtro.";
-
+    matchesList.innerHTML = "No hay partidos disponibles para ese filtro.";
     return;
   }
 
-
   // ========================================
-  // AGRUPAR
-  // ========================================
-
-  const groups =
-    groupByFecha(filtered);
-
-
-  // ========================================
-  // RENDER
+  // AGRUPAR Y DIBUJAR
   // ========================================
 
-  matchesList.innerHTML =
-    groups
-      .map(
-        (g) => `
-          <div class="day-divider">
+  const groups = groupByFecha(filtered);
 
-            <span class="day-label">
-              ${g.fecha}
-            </span>
+  matchesList.innerHTML = groups
+    .map(
+      (g) => `
+        <div class="day-divider">
+          <span class="day-label">
+            ${g.fecha}
+          </span>
+          <span class="day-count">
+            ${g.items.length} partido${g.items.length === 1 ? "" : "s"}
+          </span>
+        </div>
 
-            <span class="day-count">
-              ${g.items.length}
-              partido${g.items.length === 1 ? "" : "s"}
-            </span>
-
-          </div>
-
-          ${g.items
-            .map((m) =>
-              matchCardHtml(
-                m,
-                state.view
-              )
-            )
-            .join("")}
-        `
-      )
-      .join("");
+        ${g.items
+          .map((m) => matchCardHtml(m, state.view))
+          .join("")}
+      `
+    )
+    .join("");
 }
-
 
 // ==========================================
 // EXPORTS

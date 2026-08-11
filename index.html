@@ -12,7 +12,7 @@
   <body>
     <header class="topbar">
       <div class="brand-wrap">
-        <p class="brand-kicker">Futbol Argentino</p>
+        <p class="brand-kicker">Fútbol en vivo</p>
         <h1 class="brand-title">La Fecha</h1>
       </div>
       <div class="topbar-right">
@@ -20,115 +20,392 @@
         <button id="refresh-btn" class="refresh-btn" type="button">Actualizar</button>
       </div>
     </header>
+<style>
+/* 1. Forzar el Grid del Layout principal */
+main.layout {
+  display: grid !important;
+  grid-template-columns: 240px 1fr 1fr !important;
+  gap: 1rem !important;
+  align-items: start !important;
+}
 
-    <main class="layout">
-      <section class="panel panel-controls reveal">
-        <div class="section-title-wrap">
-          <h2 class="section-title">Competencias</h2>
+/* 2. Limitar la Sidebar a su columna a la izquierda (evita que se expanda a lo ancho) */
+.panel-controls {
+  grid-column: 1 / 2 !important;
+  width: 100% !important;
+  max-width: 240px !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. Posicionar el panel de Resultados en la columna central */
+.panel-matches {
+  grid-column: 2 / 3 !important;
+}
+
+/* 4. Posicionar el panel de Tablas en la columna derecha */
+.panel-table {
+  grid-column: 3 / 4 !important;
+}
+
+/* Acordeón Compacto */
+.league-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.accordion-item {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel-bg, #d8e2cf);
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: #19622b;
+  color: #ffffff;
+  border: none;
+  font-family: 'Teko', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.accordion-header:hover {
+  background: #134d22;
+}
+
+.country-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.flag-icon {
+  width: 14px;
+  height: 10px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.chevron {
+  font-size: 0.6rem;
+  transition: transform 0.2s ease;
+}
+
+.accordion-item.active .chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  display: none;
+  padding: 3px;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.accordion-item.active .accordion-content {
+  display: flex;
+}
+
+.accordion-content .segment-btn {
+  width: 100%;
+  text-align: left;
+  font-size: 0.78rem;
+  padding: 4px 6px;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 900px) {
+  main.layout {
+    grid-template-columns: 1fr !important;
+  }
+  .panel-controls, .panel-matches, .panel-table {
+    grid-column: auto !important;
+    max-width: 100% !important;
+  }
+}
+</style>
+<main class="layout">
+  <!-- SIDEBAR IZQUIERDA (COMPETENCIAS Y BÚSQUEDA) -->
+  <aside class="panel panel-controls reveal">
+    <div class="section-title-wrap">
+      <h2 class="section-title">Competencias</h2>
+    </div>
+
+    <p class="live-banner" id="live-status">Conectando datos en vivo...</p>
+
+    <!-- ACORDEÓN DE PAÍSES COMPACTO -->
+    <div class="league-accordion" role="tablist" aria-label="Competencias">
+      
+      <!-- ARGENTINA -->
+      <div class="accordion-item active">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/ar.png" class="flag-icon" alt="" /> ARGENTINA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn active" data-category="primera">Primera División</button>
+          <button class="segment-btn" data-category="segunda">Primera Nacional</button>
+          <button class="segment-btn" data-category="espn" data-league="arg.copa">Copa Argentina</button>
         </div>
+      </div>
 
-        <p class="live-banner" id="live-status">Conectando datos en vivo...</p>
-
-        <div class="segmented" role="tablist" aria-label="Categoria">
-          <button class="segment-btn active" data-category="primera" role="tab" aria-selected="true">Primera</button>
-          <button class="segment-btn" data-category="segunda" role="tab" aria-selected="false">Primera Nacional</button>
+      <!-- INGLATERRA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/gb-eng.png" class="flag-icon" alt="" /> INGLATERRA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="eng.1">Premier League</button>
         </div>
+      </div>
 
-        <div class="toolbar">
-          <label class="search-wrap" for="team-search">
-            <span>Buscar equipo</span>
-            <input id="team-search" type="search" placeholder="Ej: River" />
-          </label>
-          <label class="toggle-wrap" for="live-only" id="live-only-wrap">
-            <input id="live-only" type="checkbox" />
-            <span>Solo en juego</span>
-          </label>
+      <!-- ESPAÑA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/es.png" class="flag-icon" alt="" /> ESPAÑA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="esp.1">LaLiga</button>
         </div>
+      </div>
 
-        <div class="segmented view-switch" role="tablist" aria-label="Vista">
-          <button class="segment-btn active" data-view="resultados">Resultados</button>
-          <button class="segment-btn" data-view="proximos">Proximos</button>
-          <button class="segment-btn" data-view="tabla">Tabla</button>
+      <!-- ITALIA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/it.png" class="flag-icon" alt="" /> ITALIA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="ita.1">Serie A</button>
         </div>
-      </section>
+      </div>
 
-      <section class="panel panel-matches reveal">
-        <div class="section-title-wrap">
-          <h2 class="section-title" id="matches-title">Resultados</h2>
+      <!-- ALEMANIA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/de.png" class="flag-icon" alt="" /> ALEMANIA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="ger.1">Bundesliga</button>
         </div>
-        <div id="matches-list" class="matches-list" aria-live="polite"></div>
-      </section>
+      </div>
 
-      <section class="panel panel-table reveal">
-        <div class="section-title-wrap">
-          <h2 class="section-title">Tablas</h2>
+      <!-- FRANCIA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/fr.png" class="flag-icon" alt="" /> FRANCIA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="fra.1">Ligue 1</button>
         </div>
+      </div>
 
-        <div class="table-controls" id="table-controls">
-          <div class="segmented" role="tablist" aria-label="Torneo" id="torneo-switch">
-            <button class="segment-btn" data-torneo="apertura" type="button">Apertura</button>
-            <button class="segment-btn" data-torneo="clausura" type="button">Clausura</button>
-          </div>
-          <label class="search-wrap" for="season-select">
-            <span>Temporada</span>
-            <select id="season-select"></select>
-          </label>
+      <!-- BRASIL -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/br.png" class="flag-icon" alt="" /> BRASIL
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="bra.1">Brasileirão</button>
         </div>
-        <p class="table-context" id="table-context"></p>
+      </div>
 
-        <div id="standings-sections" class="standings-sections"></div>
-
-        <section class="playoff-box" id="playoff-box">
-          <h3 class="sub-title">Cruces playoff (proyeccion)</h3>
-          <div id="playoff-list" class="playoff-list"></div>
-        </section>
-
-        <section class="playoff-box" id="annual-box">
-          <h3 class="sub-title">Tabla anual</h3>
-          <p class="box-note">Suma los puntos del Apertura y el Clausura de la temporada.</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Equipo</th>
-                  <th>PTS</th>
-                  <th>PJ</th>
-                  <th>DG</th>
-                </tr>
-              </thead>
-              <tbody id="annual-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="playoff-box" id="averages-box">
-          <h3 class="sub-title">Tabla promedios</h3>
-          <p class="box-note">Puntos y partidos sumados de las ultimas 3 temporadas.</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Equipo</th>
-                  <th>PTS</th>
-                  <th>PJ</th>
-                  <th>Prom</th>
-                </tr>
-              </thead>
-              <tbody id="averages-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <div class="legend">
-          <span class="legend-item leader">Verde: puntero/campeon</span>
-          <span class="legend-item libertadores">Naranja: Libertadores</span>
-          <span class="legend-item sudamericana">Celeste: Sudamericana/playoffs</span>
-          <span class="legend-item descenso">Rojo: descenso</span>
+      <!-- URUGUAY -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/uy.png" class="flag-icon" alt="" /> URUGUAY
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="uru.1">Primera División</button>
         </div>
-      </section>
-    </main>
+      </div>
+
+      <!-- CHILE -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/cl.png" class="flag-icon" alt="" /> CHILE
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="chi.1">Primera División</button>
+        </div>
+      </div>
+
+      <!-- ECUADOR -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/ec.png" class="flag-icon" alt="" /> ECUADOR
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="ecu.1">LigaPro</button>
+        </div>
+      </div>
+
+      <!-- COLOMBIA -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/co.png" class="flag-icon" alt="" /> COLOMBIA
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="col.1">Liga BetPlay</button>
+        </div>
+      </div>
+
+      <!-- CONTINENTALES -->
+      <div class="accordion-item">
+        <button class="accordion-header" type="button">
+          <span class="country-info">
+            <img src="https://flagcdn.com/w40/un.png" class="flag-icon" alt="" /> CONTINENTALES
+          </span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="accordion-content">
+          <button class="segment-btn" data-category="espn" data-league="uefa.champions">Champions League</button>
+          <button class="segment-btn" data-category="espn" data-league="conmebol.libertadores">Copa Libertadores</button>
+          <button class="segment-btn" data-category="espn" data-league="conmebol.sudamericana">Copa Sudamericana</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BUSCADOR Y SWITCH DE VISTAS COMPACTO -->
+    <div class="toolbar">
+      <label class="search-wrap" for="team-search">
+        <span>Buscar equipo</span>
+        <input id="team-search" type="search" placeholder="Ej: River" />
+      </label>
+      <label class="toggle-wrap" for="live-only" id="live-only-wrap">
+        <input id="live-only" type="checkbox" />
+        <span>Solo en juego</span>
+      </label>
+    </div>
+
+    <div class="segmented view-switch" role="tablist" aria-label="Vista">
+      <button class="segment-btn active" data-view="resultados">Resultados</button>
+      <button class="segment-btn" data-view="proximos">Proximos</button>
+      <button class="segment-btn" data-view="tabla">Tabla</button>
+    </div>
+  </aside>
+
+  <!-- PANEL DE RESULTADOS -->
+  <section class="panel panel-matches reveal">
+    <div class="section-title-wrap">
+      <h2 class="section-title" id="matches-title">Resultados</h2>
+    </div>
+    <div id="matches-list" class="matches-list" aria-live="polite"></div>
+  </section>
+
+  <!-- PANEL DE TABLAS -->
+  <section class="panel panel-table reveal">
+    <div class="section-title-wrap">
+      <h2 class="section-title">Tablas</h2>
+    </div>
+
+    <div class="table-controls" id="table-controls">
+      <div class="segmented" role="tablist" aria-label="Torneo" id="torneo-switch">
+        <button class="segment-btn" data-torneo="apertura" type="button">Apertura</button>
+        <button class="segment-btn" data-torneo="clausura" type="button">Clausura</button>
+      </div>
+      <label class="search-wrap" for="season-select">
+        <span>Temporada</span>
+        <select id="season-select"></select>
+      </label>
+    </div>
+    <p class="table-context" id="table-context"></p>
+
+    <div id="standings-sections" class="standings-sections"></div>
+
+    <section class="playoff-box" id="playoff-box">
+      <h3 class="sub-title">Cruces playoff (proyeccion)</h3>
+      <div id="playoff-list" class="playoff-list"></div>
+    </section>
+
+    <section class="playoff-box" id="annual-box">
+      <h3 class="sub-title">Tabla anual</h3>
+      <p class="box-note">Suma los puntos del Apertura y el Clausura de la temporada.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Equipo</th>
+              <th>PTS</th>
+              <th>PJ</th>
+              <th>DG</th>
+            </tr>
+          </thead>
+          <tbody id="annual-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="playoff-box" id="averages-box">
+      <h3 class="sub-title">Tabla promedios</h3>
+      <p class="box-note">Puntos y partidos sumados de las ultimas 3 temporadas.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Equipo</th>
+              <th>PTS</th>
+              <th>PJ</th>
+              <th>Prom</th>
+            </tr>
+          </thead>
+          <tbody id="averages-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="legend">
+      <span class="legend-item leader">Verde: puntero/campeon</span>
+      <span class="legend-item libertadores">Naranja: Libertadores</span>
+      <span class="legend-item sudamericana">Celeste: Sudamericana/playoffs</span>
+      <span class="legend-item descenso">Rojo: descenso</span>
+    </div>
+  </section>
+</main>
 
     <div id="match-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Detalle del partido">
       <div class="modal-box">

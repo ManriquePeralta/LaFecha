@@ -598,14 +598,90 @@ function renderAnnualAndAverages() {
 // RENDER GENERAL
 // ==========================================
 
+// En render-standings.js
+
 function renderAll() {
   if (isDetailPage) return;
 
+  const playoffBox = document.querySelector("#playoff-box");
+  const annualBox = document.querySelector("#annual-box");
+  const averagesBox = document.querySelector("#averages-box");
+  const tableControls = document.querySelector("#table-controls");
+
+  // ==========================================
+  // 1. MODO LIGAS ESPN (INTERNACIONAL / COPA ARG)
+  // ==========================================
+  if (state.isEspnLeague) {
+    // Ocultamos paneles exclusivos del formato AFA
+    if (playoffBox) playoffBox.style.display = "none";
+    if (annualBox) annualBox.style.display = "none";
+    if (averagesBox) averagesBox.style.display = "none";
+    if (tableControls) tableControls.style.display = "none";
+
+    // Pintamos únicamente los partidos e interfaz de la liga ESPN
+    renderMatches();
+    renderEspnStandings();
+    return;
+  }
+
+  // ==========================================
+  // 2. MODO FÚTBOL ARGENTINO (AFA)
+  // ==========================================
+  // Restauramos visibilidad de paneles AFA
+  if (playoffBox) playoffBox.style.display = "block";
+  if (annualBox) annualBox.style.display = "block";
+  if (averagesBox) averagesBox.style.display = "block";
+  if (tableControls) tableControls.style.display = "flex";
+
+  // Ejecutamos tus funciones modulares nativas de AFA
   renderMatches();
-
   renderStandingsAndCrosses();
-
   renderAnnualAndAverages();
+}
+
+// Helper para dibujar la tabla de ESPN en el contenedor #standings-sections
+function renderEspnStandings() {
+  const standingsContainer = document.querySelector("#standings-sections");
+  if (!standingsContainer) return;
+
+  if (!state.currentStandings || !state.currentStandings.zonas?.length) {
+    standingsContainer.innerHTML = '<p class="detail-empty">Sin datos de posiciones disponibles para esta competencia.</p>';
+    return;
+  }
+
+  const zona = state.currentStandings.zonas[0];
+  const rowsHtml = (zona.tabla || []).map((item, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td class="team-with-logo">
+        ${item.logo ? `<img src="${item.logo}" alt="" class="team-logo" />` : ''}
+        <strong class="team-name" data-team-name="${item.equipo}">${item.equipo}</strong>
+      </td>
+      <td><strong>${item.pts}</strong></td>
+      <td>${item.pj}</td>
+      <td>${item.dg}</td>
+    </tr>
+  `).join("");
+
+  standingsContainer.innerHTML = `
+    <div class="table-wrap">
+      <h3 class="sub-title">${zona.nombre || 'Tabla de Posiciones'}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Equipo</th>
+            <th>PTS</th>
+            <th>PJ</th>
+            <th>DG</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="5">Sin equipos registrados.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 

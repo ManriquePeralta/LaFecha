@@ -6,6 +6,8 @@ import { parseScoreboard, mergeStandingsTables } from "./api-parse.js";
 import { fetchStandingsSafe } from "./season-types.js";
 import { renderAll } from "./render-standings.js";
 import { syncTorneoControls } from "./ui-controls.js";
+// Al principio de data-loader.js
+import { renderMatches } from "./render-matches.js";
 
 function setDate() {
   const now = new Date();
@@ -477,6 +479,11 @@ async function loadCategoryData(category, forced = false) {
     return;
   }
 
+  // Desactivar explícitamente el modo ESPN al cargar fútbol argentino
+  state.isEspnLeague = false;
+  state.espnLeagueCode = null;
+  state.currentMatches = [];
+
   state.isLoading = true;
 
   refreshBtn.disabled = true;
@@ -599,6 +606,8 @@ async function loadCategoryData(category, forced = false) {
 
       syncTorneoControls();
 
+      // Renderizamos la lista de partidos de AFA Y las tablas
+      renderMatches();
       renderAll();
 
       scheduleNextPoll();

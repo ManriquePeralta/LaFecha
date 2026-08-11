@@ -15,58 +15,36 @@ import { parseSummaryMatch } from "./api-parse.js";
 // EVENTOS DEL PARTIDO
 // ============================================================
 
-function extractScorers(raw) {
-  const events = raw?.keyEvents || raw?.commentary || [];
-
-  return events
-    .filter(
-      (e) =>
-        e?.scoringPlay ||
-        /goal/i.test(e?.type?.text || e?.type?.id || "")
-    )
-    .map((e) => ({
-      minute: e?.clock?.displayValue || "",
-      text: translateMatchDetailText(
-        e?.text ||
-        e?.athletesInvolved?.[0]?.displayName ||
-        ""
-      )
-    }))
-    .filter((e) => e.text);
+// Convierte textos como "90'+5'" o "44'" a número entero para ordenar cronológicamente
+function parseMinuteNumber(minStr) {
+  if (!minStr) return 0;
+  const match = String(minStr).match(/^(\d+)/);
+  return match ? Number(match[1]) : 0;
 }
 
-function extractCards(raw) {
+// Extrae TODOS los eventos (Goles, Tarjetas, Cambios) en un solo array ordenado por minuto
+function extractTimelineEvents(raw) {
   const events = raw?.keyEvents || raw?.commentary || [];
 
   return events
     .map((e) => {
-      const typeText = String(
-        e?.type?.text || e?.type?.id || ""
-      );
+      const typeText = String(e?.type?.text || e?.type?.id || "");
+      const textRaw = String(e?.text || e?.athletesInvolved?.[0]?.displayName || "");
+      if (!textRaw) return null;
 
-      const text = String(e?.text || "");
-
-      const isYellow =
-        /yellow card|booking|caution/i.test(typeText) ||
-        /yellow card/i.test(text);
-
-      const isRed =
-        /red card|sent off|sending off/i.test(typeText) ||
-        /red card|sent off|sending off/i.test(text);
-
-      if (!isYellow && !isRed) return null;
+      const translatedText = translateMatchDetailText(textRaw);
+      const minute = e?.clock?.displayValue || "--'";
+      const kind = eventKindFromText(typeText + " " + textRaw);
 
       return {
-        minute: e?.clock?.displayValue || "",
-        kind: isRed ? "roja" : "amarilla",
-        text: translateMatchDetailText(
-          text ||
-          e?.athletesInvolved?.[0]?.displayName ||
-          ""
-        )
+        minute,
+        minuteNum: parseMinuteNumber(minute),
+        kind,
+        text: translatedText
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a, b) => a.minuteNum - b.minuteNum); // Orden cronológico (1' -> 90')
 }
 
 
@@ -748,170 +726,50 @@ function matchHeaderHtml(match, extra) {
 // DETALLE COMPLETO
 // ============================================================
 
-function buildMatchDetailHtml(
-  raw,
-  match
-) {
-  const scorers =
-    extractScorers(raw);
+function buildMatchDetailHtml(raw, match) {
+  const events = extractTimelineEvents(raw);
+  const lineups = extractLineups(raw);
+  const venue = extractVenue(raw);
 
-  const cards =
-    extractCards(raw);
-
-  const lineups =
-    extractLineups(raw);
-
-  const venue =
-    extractVenue(raw);
-
-  const yellowCount =
-    cards.filter(
-      (c) =>
-        c.kind === "amarilla"
-    ).length;
-
-  const redCount =
-    cards.filter(
-      (c) =>
-        c.kind === "roja"
-    ).length;
+  const goalCount = events.filter((e) => e.kind === "goal").length;
+  const yellowCount = events.filter((e) => e.kind === "yellow").length;
+  const redCount = events.filter((e) => e.kind === "red").length;
 
   const summaryCard = `
     <div class="match-summary-card">
-
-      <span>
-        ${scorers.length}
-        gol${scorers.length === 1 ? "" : "es"}
-      </span>
-
-      <span>
-        ${yellowCount}
-        amarilla${yellowCount === 1 ? "" : "s"}
-      </span>
-
-      <span>
-        ${redCount}
-        roja${redCount === 1 ? "" : "s"}
-      </span>
-
+      <span>${goalCount} gol${goalCount === 1 ? "" : "es"}</span>
+      <span>${yellowCount} amarilla${yellowCount === 1 ? "" : "s"}</span>
+      <span>${redCount} roja${redCount === 1 ? "" : "s"}</span>
     </div>
   `;
 
-  const scorersHtml =
-    scorers.length
-      ? `
-        <ul class="event-list">
-          ${scorers
-            .map((s) =>
-              eventRowHtml(
-                "goal",
-                s.minute,
-                s.text
-              )
-            )
-            .join("")}
-        </ul>
-      `
-      : "Sin goles registrados por la API.";
+  const timelineHtml = events.length
+    ? `
+      <ul class="event-list">
+        ${events.map((e) => eventRowHtml(e.kind, e.minute, e.text)).join("")}
+      </ul>
+    `
+    : '<p class="empty-inline">No hay eventos registrados para este partido.</p>';
 
-  const yellowCards =
-    cards.filter(
-      (c) =>
-        c.kind === "amarilla"
-    );
-
-  const redCards =
-    cards.filter(
-      (c) =>
-        c.kind === "roja"
-    );
-
-  const yellowCardsHtml =
-    yellowCards.length
-      ? `
-        <ul class="event-list">
-          ${yellowCards
-            .map((c) =>
-              eventRowHtml(
-                "yellow",
-                c.minute,
-                c.text ||
-                  "Tarjeta amarilla"
-              )
-            )
-            .join("")}
-        </ul>
-      `
-      : "No se registraron tarjetas amarillas.";
-
-  const redCardsHtml =
-    redCards.length
-      ? `
-        <ul class="event-list">
-          ${redCards
-            .map((c) =>
-              eventRowHtml(
-                "red",
-                c.minute,
-                c.text ||
-                  "Tarjeta roja"
-              )
-            )
-            .join("")}
-        </ul>
-      `
-      : "No se registraron tarjetas rojas.";
-
-  const lineupsHtml =
-    lineups.length
-      ? `
-        <div class="pitch-grid">
-          ${lineups
-            .map((l) =>
-              pitchCardHtml(l)
-            )
-            .join("")}
-        </div>
-      `
-      : "Formaciones no disponibles para este partido.";
+  const lineupsHtml = lineups.length
+    ? `
+      <div class="pitch-grid">
+        ${lineups.map((l) => pitchCardHtml(l)).join("")}
+      </div>
+    `
+    : "Formaciones no disponibles para este partido.";
 
   return `
-    ${matchHeaderHtml(
-      match,
-      venue
-    )}
-
+    ${matchHeaderHtml(match, venue)}
     ${summaryCard}
 
     <section class="modal-section">
-      <h3 class="sub-title">
-        Goles
-      </h3>
-
-      ${scorersHtml}
+      <h3 class="sub-title">Línea de Tiempo</h3>
+      ${timelineHtml}
     </section>
 
     <section class="modal-section">
-      <h3 class="sub-title">
-        Tarjetas amarillas
-      </h3>
-
-      ${yellowCardsHtml}
-    </section>
-
-    <section class="modal-section">
-      <h3 class="sub-title">
-        Tarjetas rojas
-      </h3>
-
-      ${redCardsHtml}
-    </section>
-
-    <section class="modal-section">
-      <h3 class="sub-title">
-        Formaciones
-      </h3>
-
+      <h3 class="sub-title">Formaciones</h3>
       ${lineupsHtml}
     </section>
   `;

@@ -23,6 +23,14 @@ function parseMinuteNumber(minStr) {
 }
 
 // Extrae TODOS los eventos (Goles, Tarjetas, Cambios) en un solo array ordenado por minuto
+// Helper seguro para extraer el número entero de un string como "90'+5'" o "44'"
+function getCleanMinuteNumber(minStr) {
+  if (!minStr) return 0;
+  const match = String(minStr).match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+// Extrae TODOS los eventos (Goles, Tarjetas, Cambios, Pausas) sin romper el JS
 function extractTimelineEvents(raw) {
   const events = raw?.keyEvents || raw?.commentary || [];
 
@@ -32,55 +40,115 @@ function extractTimelineEvents(raw) {
       const textRaw = String(e?.text || e?.athletesInvolved?.[0]?.displayName || "");
       if (!textRaw) return null;
 
-      const translatedText = translateMatchDetailText(textRaw);
+      // Garantizamos que la traducción no tire error si viene algo undefined
+      const translatedText = typeof translateMatchDetailText === "function"
+        ? translateMatchDetailText(textRaw)
+        : textRaw;
+
       const minute = e?.clock?.displayValue || "--'";
-      const kind = eventKindFromText(typeText + " " + textRaw);
+      const kind = typeof eventKindFromText === "function"
+        ? eventKindFromText(typeText + " " + textRaw)
+        : "text";
+
+      // Es 'key' (momento clave) si es Gol, Amarilla o Roja
+      const isKey = ["goal", "yellow", "red"].includes(kind);
 
       return {
         minute,
-        minuteNum: parseMinuteNumber(minute),
+        minuteNum: getCleanMinuteNumber(minute),
         kind,
+        isKey,
         text: translatedText
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.minuteNum - b.minuteNum); // Orden cronológico (1' -> 90')
+    .sort((a, b) => a.minuteNum - b.minuteNum);
 }
 
+// Renderizado de cada fila con soporte para filtrado
+function eventRowHtml(kind, minute, text, isKey) {
+  return `
+    <li class="event-row event-${kind || 'text'}" data-key="${isKey ? 'true' : 'false'}">
+      <span class="event-minute">${minute || "--'"}</span>
+      <span class="event-icon" aria-hidden="true"></span>
+      <span class="event-text">${text}</span>
+    </li>
+  `;
+}
 
+export function setupTimelineFilters() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".timeline-btn");
+    if (!btn) return;
+
+    const filter = btn.dataset.filter;
+    const container = btn.closest(".modal-section");
+    if (!container) return;
+
+    // Cambiar estado activo de botones
+    container.querySelectorAll(".timeline-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Filtrar filas de la línea de tiempo
+    const rows = container.querySelectorAll("#timeline-list .event-row");
+    rows.forEach((row) => {
+      if (filter === "key") {
+        row.style.display = row.dataset.key === "true" ? "grid" : "none";
+      } else {
+        row.style.display = "grid";
+      }
+    });
+  });
+}
 // ============================================================
 // TRADUCCIÓN DE EVENTOS
 // ============================================================
 
 function translateMatchDetailText(text) {
   const replacements = [
+    // Goles y cierres de partido
     [/Own Goal!/gi, "¡Gol en contra!"],
     [/Goal!/gi, "¡Gol!"],
+    [/Second Half ends,?/gi, "Final del partido,"],
+    [/First Half ends,?/gi, "Final del primer tiempo,"],
+    [/Second Half begins/gi, "Comienza el segundo tiempo"],
+    [/First Half begins/gi, "Comienza el partido"],
 
+    // Tarjetas
     [/is shown the Tarjeta amarilla\.?/gi, "recibe tarjeta amarilla "],
     [/is shown the Tarjeta roja\.?/gi, "recibe tarjeta roja "],
-
     [/is shown the yellow card\.?/gi, "recibe tarjeta amarilla "],
     [/is shown a yellow card\.?/gi, "recibe tarjeta amarilla "],
     [/is shown the red card\.?/gi, "recibe tarjeta roja "],
     [/is shown a red card\.?/gi, "recibe tarjeta roja "],
 
+    // Sustituciones (Cambios)
+    [/Substitution,?\s*/gi, "Cambio en "],
+    [/\breplaces\b/gi, "entra por"],
+    [/\binjured\b/gi, "lesionado"],
+
+  // Pausas, demoras y lesiones
+  [/Delay in match because of an injury\s*/gi, "Partido detenido por lesión de "],
+  [/Delay in match\s*/gi, "Partido detenido ("],
+  [/Delay over\. They are ready to continue\.?/gi, "Se reanuda el juego."],
+  [/\bDelay over\b/gi, "Se reanuda el juego"],
+
+    // Jugadas
     [/right footed shot from the centre of the box/gi, "remate de derecha desde el centro del área"],
     [/left footed shot from the centre of the box/gi, "remate de izquierda desde el centro del área"],
     [/right footed shot/gi, "remate de derecha"],
     [/left footed shot/gi, "remate de izquierda"],
     [/header/gi, "cabezazo"],
-
     [/from the centre of the box/gi, "desde el centro del área"],
     [/from the right side of the box/gi, "desde el costado derecho del área"],
     [/from the left side of the box/gi, "desde el costado izquierdo del área"],
-
     [/to the bottom left corner/gi, "abajo a la izquierda"],
     [/to the bottom right corner/gi, "abajo a la derecha"],
     [/to the top left corner/gi, "arriba a la izquierda"],
     [/to the top right corner/gi, "arriba a la derecha"],
-
     [/assisted by/gi, "asistido por"],
+
+    // Faltas
     [/for a bad foul/gi, "por una falta dura"],
     [/for a foul/gi, "por una falta"],
     [/bad foul/gi, "falta dura"]
@@ -88,7 +156,7 @@ function translateMatchDetailText(text) {
 
   return replacements
     .reduce((acc, [pattern, replacement]) => acc.replace(pattern, replacement), String(text || ""))
-    .replace(/\s+/g, " ") // Sanea espacios dobles accidentales
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -118,16 +186,84 @@ function eventKindFromText(text) {
   return "text";
 }
 
-function eventRowHtml(kind, minute, text) {
-  return `
-    <li class="event-row event-${kind}">
-      <span class="event-minute">${minute || "--'"}</span>
-      <span class="event-icon" aria-hidden="true"></span>
-      <span class="event-text">${text}</span>
-    </li>
-  `;
+
+function extractMatchStats(raw) {
+  const teamsStats = raw?.boxscore?.teams || raw?.statistics || [];
+  if (teamsStats.length < 2) return null;
+
+  const homeStats = teamsStats[0]?.statistics || [];
+  const awayStats = teamsStats[1]?.statistics || [];
+
+  const getStat = (statsList, name) => {
+    const found = statsList.find((s) => 
+      normalize(s.name || s.label || "").includes(normalize(name))
+    );
+    return found?.displayValue || found?.value || "0";
+  };
+
+  const statsKeys = [
+    { label: "Posesión de Balón", key: "possession" },
+    { label: "Tiros Totales", key: "totalShots" },
+    { label: "Tiros al Arco", key: "shotsOnTarget" },
+    { label: "Córners", key: "wonCorners" },
+    { label: "Faltas Cometidas", key: "foulsCommitted" }
+  ];
+
+  const result = statsKeys.map(({ label, key }) => ({
+    label,
+    home: getStat(homeStats, key),
+    away: getStat(awayStats, key)
+  }));
+
+  return result.some((s) => s.home !== "0" || s.away !== "0") ? result : null;
 }
 
+function matchStatsHtml(stats, homeTeam, awayTeam) {
+  if (!stats) return '<p class="empty-inline">Estadísticas no disponibles para este partido.</p>';
+
+  const rowsHtml = stats
+    .map((item) => {
+      let valHomeRaw = parseFloat(item.home) || 0;
+      let valAwayRaw = parseFloat(item.away) || 0;
+
+      // Formateo de etiquetas (agrega % a la posesión sin redondear)
+      const isPossession = item.label.toLowerCase().includes("posesión");
+      const displayHome = isPossession ? `${valHomeRaw}%` : item.home;
+      const displayAway = isPossession ? `${valAwayRaw}%` : item.away;
+
+      const total = valHomeRaw + valAwayRaw || 1;
+      const pctHome = Math.round((valHomeRaw / total) * 100);
+      const pctAway = 100 - pctHome;
+
+      return `
+        <div class="stat-row">
+          <div class="stat-values">
+            <span class="stat-val stat-val-home">${displayHome}</span>
+            <span class="stat-label">${item.label}</span>
+            <span class="stat-val stat-val-away">${displayAway}</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-home" style="width: ${pctHome}%"></div>
+            <div class="stat-bar-away" style="width: ${pctAway}%"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <div class="stats-card">
+      <div class="stats-header">
+        <strong class="stats-team-name">${homeTeam}</strong>
+        <span class="stats-vs">VS</span>
+        <strong class="stats-team-name">${awayTeam}</strong>
+      </div>
+      <div class="stats-body">
+        ${rowsHtml}
+      </div>
+    </div>
+  `;
+}
 
 // ============================================================
 // FORMACIONES
@@ -730,6 +866,7 @@ function buildMatchDetailHtml(raw, match) {
   const events = extractTimelineEvents(raw);
   const lineups = extractLineups(raw);
   const venue = extractVenue(raw);
+  const stats = extractMatchStats(raw);
 
   const goalCount = events.filter((e) => e.kind === "goal").length;
   const yellowCount = events.filter((e) => e.kind === "yellow").length;
@@ -743,20 +880,22 @@ function buildMatchDetailHtml(raw, match) {
     </div>
   `;
 
+  // En buildMatchDetailHtml dentro de match-detail.js:
   const timelineHtml = events.length
     ? `
-      <ul class="event-list">
-        ${events.map((e) => eventRowHtml(e.kind, e.minute, e.text)).join("")}
+      <div class="timeline-controls">
+        <button class="timeline-btn active" data-filter="all">Todos</button>
+        <button class="timeline-btn" data-filter="key">Momentos Clave</button>
+      </div>
+      <ul class="event-list" id="timeline-list">
+        ${events.map((e) => eventRowHtml(e.kind, e.minute, e.text, e.isKey)).join("")}
       </ul>
     `
     : '<p class="empty-inline">No hay eventos registrados para este partido.</p>';
+  const statsSectionHtml = matchStatsHtml(stats, match?.local || "Local", match?.visitante || "Visitante");
 
   const lineupsHtml = lineups.length
-    ? `
-      <div class="pitch-grid">
-        ${lineups.map((l) => pitchCardHtml(l)).join("")}
-      </div>
-    `
+    ? `<div class="pitch-grid">${lineups.map((l) => pitchCardHtml(l)).join("")}</div>`
     : "Formaciones no disponibles para este partido.";
 
   return `
@@ -769,13 +908,45 @@ function buildMatchDetailHtml(raw, match) {
     </section>
 
     <section class="modal-section">
+      <h3 class="sub-title">Estadísticas del Partido</h3>
+      ${statsSectionHtml}
+    </section>
+
+    <section class="modal-section">
       <h3 class="sub-title">Formaciones</h3>
       ${lineupsHtml}
     </section>
   `;
 }
 
+// Activa la interacción de los botones Todos / Momentos Clave
+// Listener global autocontenido: no necesita export ni llamarse dentro de initDetailPage()
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".timeline-btn");
+  if (!btn) return;
 
+  const filter = btn.dataset.filter;
+  const container = btn.closest(".modal-section");
+  if (!container) return;
+
+  // 1. Cambiar estado visual de los botones
+  container.querySelectorAll(".timeline-btn").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  // 2. Filtrar las filas de la línea de tiempo de forma segura
+  const timelineList = container.querySelector("#timeline-list");
+  if (!timelineList) return;
+
+  const rows = timelineList.querySelectorAll(".event-row");
+  rows.forEach((row) => {
+    if (filter === "key") {
+      const isKey = row.getAttribute("data-key") === "true";
+      row.style.display = isKey ? "grid" : "none";
+    } else {
+      row.style.display = "grid";
+    }
+  });
+});
 // ============================================================
 // RENDER
 // ============================================================

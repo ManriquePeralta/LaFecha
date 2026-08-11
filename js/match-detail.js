@@ -764,13 +764,15 @@ function extractVenue(raw) {
 // CABECERA DEL PARTIDO
 // ============================================================
 
+// ============================================================
+// CABECERA DEL PARTIDO (CON LINKS A FICHA DE CLUB)
+// ============================================================
+
 function matchHeaderHtml(match, extra) {
   const isLive =
     match?.estado === "En juego" ||
     match?.statusType === "in";
 
-  // El detalle de la API viene, por ejemplo: "13'"
-  // Lo usamos como minuto de referencia.
   const detalleMinuto = (() => {
     const matchDetalle = String(match?.detalle || "").match(/^(\d+)/);
     return matchDetalle ? Number(matchDetalle[1]) : null;
@@ -782,29 +784,22 @@ function matchHeaderHtml(match, extra) {
   let minuto = 0;
   let segundo = 0;
 
-  // Si la API realmente manda minuto/segundo, usamos esos datos.
-  if (
-    Number.isFinite(minutoAPI) &&
-    minutoAPI > 0
-  ) {
+  if (Number.isFinite(minutoAPI) && minutoAPI > 0) {
     minuto = minutoAPI;
     segundo = Number.isFinite(segundoAPI) ? segundoAPI : 0;
-  }
-  // Si no, usamos detalle: "13'" => 13:00
-  else if (detalleMinuto !== null) {
+  } else if (detalleMinuto !== null) {
     minuto = detalleMinuto;
     segundo = 0;
   }
 
-  const tiempoJuego =
-    isLive
-      ? `${minuto}:${String(segundo).padStart(2, "0")}`
-      : "";
+  const tiempoJuego = isLive
+    ? `${minuto}:${String(segundo).padStart(2, "0")}`
+    : "";
 
   return `
     <div class="modal-header">
 
-      <span class="team-with-logo">
+      <span class="team-with-logo team-link" data-team-name="${match?.local || ''}">
         <img
           class="team-logo"
           src="${match?.localLogo || PLACEHOLDER_LOGO}"
@@ -834,7 +829,7 @@ function matchHeaderHtml(match, extra) {
 
       </div>
 
-      <span class="team-with-logo">
+      <span class="team-with-logo team-link" data-team-name="${match?.visitante || ''}">
         <img
           class="team-logo"
           src="${match?.visitanteLogo || PLACEHOLDER_LOGO}"
@@ -1179,6 +1174,10 @@ function startDetailLiveClock(
 // PÁGINA DE DETALLE
 // ============================================================
 
+// ============================================================
+// PÁGINA DE DETALLE
+// ============================================================
+
 async function initDetailPage() {
   if (!detailPageRoot) {
     return;
@@ -1186,136 +1185,86 @@ async function initDetailPage() {
 
   stopDetailLiveClock();
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-  const matchId =
-    params.get("matchId");
-
-  const categoryParam =
-    params.get("category");
-
-  const seasonParam =
-    Number(
-      params.get("season")
-    );
-
-  const torneoParam =
-    params.get("torneo");
-
+  const params = new URLSearchParams(window.location.search);
+  const matchId = params.get("matchId");
+  const categoryParam = params.get("category");
+  const seasonParam = Number(params.get("season"));
+  const torneoParam = params.get("torneo");
 
   // ----------------------------------------------------------
   // Estado
   // ----------------------------------------------------------
 
-  state.category =
-    categoryParam === "segunda"
-      ? "segunda"
-      : "primera";
-
-  state.season =
-    Number.isFinite(
-      seasonParam
-    )
-      ? seasonParam
-      : CURRENT_SEASON;
-
-  state.torneo =
-    torneoParam === "clausura"
-      ? "clausura"
-      : "apertura";
-
+  state.category = categoryParam === "segunda" ? "segunda" : "primera";
+  state.season = Number.isFinite(seasonParam) ? seasonParam : CURRENT_SEASON;
+  state.torneo = torneoParam === "clausura" ? "clausura" : "apertura";
 
   if (detailBackBtn) {
-    detailBackBtn.href =
-      "index.html";
+    detailBackBtn.href = "index.html";
   }
 
-
-  detailPageRoot.innerHTML =
-    '<p class="detail-loading">Cargando detalle del partido...</p>';
-
+  detailPageRoot.innerHTML = '<p class="detail-loading">Cargando detalle del partido...</p>';
 
   if (!matchId) {
-    detailPageRoot.innerHTML =
-      '<p class="detail-empty">No se indicó el partido.</p>';
-
+    detailPageRoot.innerHTML = '<p class="detail-empty">No se indicó el partido.</p>';
     return;
   }
 
-
   try {
-    const res =
-      await noCacheFetch(
-        summaryUrl(
-          state.category,
-          matchId
-        )
-      );
+    const res = await noCacheFetch(summaryUrl(state.category, matchId));
 
     if (!res.ok) {
-      throw new Error(
-        "summary fetch failed"
-      );
+      throw new Error("summary fetch failed");
     }
 
-    const raw =
-      await res.json();
-
-
-    const match =
-      parseSummaryMatch(
-        raw,
-        matchId
-      );
-
+    const raw = await res.json();
+    const match = parseSummaryMatch(raw, matchId);
 
     if (!match) {
-      detailPageRoot.innerHTML =
-        '<p class="detail-empty">No se pudo leer el partido desde ESPN.</p>';
-
+      detailPageRoot.innerHTML = '<p class="detail-empty">No se pudo leer el partido desde ESPN.</p>';
       return;
     }
-
 
     // --------------------------------------------------------
     // Render inicial
     // --------------------------------------------------------
 
-    detailPageRoot.innerHTML =
-      `
-        <div class="detail-article">
-          ${buildMatchDetailHtml(
-            raw,
-            match
-          )}
-        </div>
-      `;
+    detailPageRoot.innerHTML = `
+      <div class="detail-article">
+        ${buildMatchDetailHtml(raw, match)}
+      </div>
+    `;
 
+    // --------------------------------------------------------
+    // INTERCEPTOR DE CLICS PARA IR A TEAM.HTML
+    // --------------------------------------------------------
+    detailPageRoot.addEventListener("click", (e) => {
+      const teamEl = e.target.closest(".team-link, [data-team-name]");
+      if (teamEl) {
+        const teamName = teamEl.dataset.teamName || teamEl.querySelector("strong")?.textContent;
+        if (teamName) {
+          const navParams = new URLSearchParams({
+            team: teamName.trim(),
+            category: state.category,
+            season: String(state.season)
+          });
+          window.location.href = `team.html?${navParams.toString()}`;
+        }
+      }
+    });
 
     // --------------------------------------------------------
     // Iniciar reloj si está en vivo
     // --------------------------------------------------------
 
-    if (
-      match.estado ===
-      "En juego" &&
-      match.tiempoJuego
-    ) {
-      startDetailLiveClock(
-        matchId
-      );
+    if (match.estado === "En juego" && match.tiempoJuego) {
+      startDetailLiveClock(matchId);
     }
 
   } catch (e) {
     console.error(e);
-
     stopDetailLiveClock();
-
-    detailPageRoot.innerHTML =
-      '<p class="detail-empty">No se pudo cargar el detalle de este partido.</p>';
+    detailPageRoot.innerHTML = '<p class="detail-empty">No se pudo cargar el detalle de este partido.</p>';
   }
 }
 

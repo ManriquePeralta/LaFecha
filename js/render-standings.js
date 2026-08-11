@@ -241,7 +241,7 @@ function renderStandingsAndCrosses() {
 
   standingsSections.innerHTML =
     zonas
-      .map((zona) => {
+.map((zona) => {
         const rows =
           zona.tabla
             .map((row, idx) => {
@@ -257,13 +257,13 @@ function renderStandingsAndCrosses() {
                   <td>${pos}</td>
 
                   <td>
-                    <span class="team-with-logo">
+                    <span class="team-with-logo team-link" data-team-name="${row.equipo}">
                       <img
                         class="team-logo"
                         src="${row.logo || PLACEHOLDER_LOGO}"
                         alt=""
                       />
-                      ${row.equipo}
+                      <strong>${row.equipo}</strong>
                     </span>
                   </td>
 

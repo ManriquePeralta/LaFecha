@@ -38,30 +38,12 @@ function matchCardHtml(m, view) {
           : "badge-scheduled";
 
 
-    /*
-     * ======================================
-     * TIEMPO DE JUEGO
-     * ======================================
-     *
-     * El loader genera:
-     *
-     * m.tiempoJuego = "67:34"
-     *
-     * Si todavía no existe, intentamos obtener
-     * el minuto directamente de la API.
-     */
-
     let liveTime = "";
 
     if (isLive) {
-
       if (m.tiempoJuego) {
-
-        liveTime =
-          `<span class="live-time">${m.tiempoJuego}</span>`;
-
+        liveTime = `<span class="live-time">${m.tiempoJuego}</span>`;
       } else {
-
         const minute =
           m.minuto ??
           m.minute ??
@@ -76,24 +58,13 @@ function matchCardHtml(m, view) {
           0;
 
         if (minute !== null) {
-
-          liveTime =
-            `<span class="live-time">${minute}:${String(second).padStart(2, "0")}</span>`;
-
+          liveTime = `<span class="live-time">${minute}:${String(second).padStart(2, "0")}</span>`;
         } else {
-
-          liveTime =
-            `<span class="live-time">EN VIVO</span>`;
+          liveTime = `<span class="live-time">EN VIVO</span>`;
         }
       }
     }
 
-
-    /*
-     * ======================================
-     * ESTADO
-     * ======================================
-     */
 
     const statusText =
       isLive
@@ -112,7 +83,7 @@ function matchCardHtml(m, view) {
 
         <p class="teams teams-line">
 
-          <span class="team-with-logo">
+          <span class="team-with-logo team-link" data-team-name="${m.local}">
             <img
               class="team-logo"
               src="${m.localLogo || PLACEHOLDER_LOGO}"
@@ -125,7 +96,7 @@ function matchCardHtml(m, view) {
             vs
           </span>
 
-          <span class="team-with-logo">
+          <span class="team-with-logo team-link" data-team-name="${m.visitante}">
             <img
               class="team-logo"
               src="${m.visitanteLogo || PLACEHOLDER_LOGO}"
@@ -174,7 +145,7 @@ function matchCardHtml(m, view) {
 
       <p class="teams teams-line">
 
-        <span class="team-with-logo">
+        <span class="team-with-logo team-link" data-team-name="${m.local}">
           <img
             class="team-logo"
             src="${m.localLogo || PLACEHOLDER_LOGO}"
@@ -187,7 +158,7 @@ function matchCardHtml(m, view) {
           vs
         </span>
 
-        <span class="team-with-logo">
+        <span class="team-with-logo team-link" data-team-name="${m.visitante}">
           <img
             class="team-logo"
             src="${m.visitanteLogo || PLACEHOLDER_LOGO}"

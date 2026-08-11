@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ficha del Club - La Fecha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Roboto+Condensed:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="teamstyles.css" />
+  </head>
+  <body class="team-page">
+    <header class="topbar">
+      <div class="detail-brand">
+        <p class="brand-kicker">Fútbol Argentino</p>
+        <h1 class="brand-title">La Fecha</h1>
+      </div>
+      <a id="team-back-btn" class="detail-back" href="index.html">Volver</a>
+    </header>
+
+    <main class="team-shell">
+      <section class="team-panel">
+        <div id="team-hero-content">
+          <p class="detail-loading">Cargando información del club...</p>
+        </div>
+
+        <div class="team-tabs-bar">
+          <button class="team-tab-btn active" data-tab="matches">Partidos</button>
+          <button class="team-tab-btn" data-tab="standings">Posición</button>
+          <button class="team-tab-btn" data-tab="squad">Plantel</button>
+        </div>
+
+        <div id="team-tab-content">
+          <!-- Contenido dinámico -->
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="js/team-main.js"></script>
+  </body>
+</html>

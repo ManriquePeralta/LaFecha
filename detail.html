@@ -623,7 +623,37 @@
   background: var(--paper-dim);
   color: var(--ink);
 }
+/* ---------- Interacción Cliqueable en Detail / Modales ---------- */
 
+/* Cursor de mano para los contenedores de equipo */
+.detail-article .team-link,
+.modal-header .team-link {
+  cursor: pointer;
+  border-radius: var(--radius, 6px);
+  padding: 0.35rem 0.6rem;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+/* Efecto Hover: Resaltado sutil y micro-elevación */
+.detail-article .team-link:hover,
+.modal-header .team-link:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+/* Efecto Feedback al presionar (Active) */
+.detail-article .team-link:active,
+.modal-header .team-link:active {
+  transform: translateY(0);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Subrayado suave en el nombre al pasar el mouse */
+.detail-article .team-link:hover strong,
+.modal-header .team-link:hover strong {
+  text-decoration: underline;
+  color: var(--ink, #111111);
+}
 .timeline-btn.active {
   background: var(--ink);
   color: var(--paper-raised);

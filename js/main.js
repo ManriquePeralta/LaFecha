@@ -8,6 +8,43 @@ import { renderMatches } from "./render-matches.js";
 import { loadCategoryData, loadCache, setLiveBanner, setDate } from "./data-loader.js";
 import { openMatchDetail, closeMatchDetail, initDetailPage } from "./match-detail.js";
 
+// Helper para navegar a la ficha del equipo
+function goToTeamPage(teamName) {
+  if (!teamName) return;
+  const params = new URLSearchParams({
+    team: teamName.trim(),
+    category: state.category,
+    season: String(state.season)
+  });
+  window.location.href = `team.html?${params.toString()}`;
+}
+
+// ==========================================
+// AUTO-REFRESH EN SEGUNDO PLANO
+// ==========================================
+const AUTO_REFRESH_MS = 30000; // Recarga cada 30 segundos
+let autoRefreshTimer = null;
+
+function triggerAutoRefresh() {
+  // Evitamos llamadas innecesarias si el usuario minimizó o cambió de pestaña
+  if (document.hidden) return;
+  
+  // Refresca la data en background sin bloqueos
+  loadCategoryData(state.category, true);
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(triggerAutoRefresh, AUTO_REFRESH_MS);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+}
+
 if (!isDetailPage) {
   document.querySelectorAll("[data-category]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -59,10 +96,24 @@ if (!isDetailPage) {
     loadCategoryData(state.category, true);
   });
 
-  matchesList.addEventListener("click", (e) => {
+  // Interceptamos clics en listas de partidos y tablas de posiciones
+  document.addEventListener("click", (e) => {
+    // 1. Clic en un equipo (escudo o nombre) de las tablas o partidos
+    const teamEl = e.target.closest(".team-link, .team-with-logo, [data-team-name]");
+    if (teamEl) {
+      e.stopPropagation();
+      const teamName = teamEl.dataset.teamName || teamEl.querySelector("strong, .team-name")?.textContent;
+      if (teamName) {
+        goToTeamPage(teamName);
+        return;
+      }
+    }
+
+    // 2. Clic en la tarjeta de partido (si no tocó un equipo)
     const card = e.target.closest(".match-card[data-match-id]");
-    if (!card) return;
-    openMatchDetail(card.dataset.matchId);
+    if (card) {
+      openMatchDetail(card.dataset.matchId);
+    }
   });
 
   matchesList.addEventListener("keydown", (e) => {
@@ -85,6 +136,16 @@ if (!isDetailPage) {
     if (e.key === "Escape" && matchModal && !matchModal.classList.contains("hidden")) closeMatchDetail();
   });
 
+  // Control de pestaña visible para pausar/reanudar el polling
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopAutoRefresh();
+    } else {
+      triggerAutoRefresh();
+      startAutoRefresh();
+    }
+  });
+
   setDate();
   populateSeasonSelect();
   syncTorneoControls();
@@ -93,6 +154,9 @@ if (!isDetailPage) {
   syncLiveOnlyAvailability();
   renderAll();
   loadCategoryData(state.category, true);
+  
+  // Arranca el refresco automático al cargar
+  startAutoRefresh();
 } else {
   initDetailPage();
 }

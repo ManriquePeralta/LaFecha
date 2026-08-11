@@ -159,131 +159,91 @@ if (
   };
 }
 
+// Helper para garantizar que el logo de ESPN cargue bien siempre
+function getTeamLogoUrl(team) {
+  if (team?.logos?.[0]?.href) return team.logos[0].href;
+  if (team?.logo) return team.logo;
+  if (team?.id) return `https://a.espncdn.com/i/teamlogos/soccer/500/${team.id}.png`;
+  return PLACEHOLDER_LOGO;
+}
+
 function parseScoreboard(raw) {
   const all = (raw.events || [])
     .map((event) => {
       const comp = event.competitions?.[0];
-
       if (!comp?.competitors) return null;
 
-      const home =
-        comp.competitors.find(
-          (c) => c.homeAway === "home"
-        ) || comp.competitors[0];
-
-      const away =
-        comp.competitors.find(
-          (c) => c.homeAway === "away"
-        ) || comp.competitors[1];
+      const home = comp.competitors.find((c) => c.homeAway === "home") || comp.competitors[0];
+      const away = comp.competitors.find((c) => c.homeAway === "away") || comp.competitors[1];
 
       if (!home || !away) return null;
 
-      const statusType =
-        comp.status?.type?.state || "pre";
-
-      const dateIso =
-        comp.date || event.date;
-
-      // NUEVO: tomar el reloj directamente de ESPN
-      const gameClock =
-        getGameClock(comp.status);
-
+      const statusType = comp.status?.type?.state || "pre";
+      const dateIso = comp.date || event.date;
+      const gameClock = getGameClock(comp.status);
 
       return {
-        id: String(
-          comp.id ||
-          event.id ||
-          `${home.team?.id || home.team?.displayName}-${away.team?.id || away.team?.displayName}`
-        ),
-
-        local:
-          home.team?.shortDisplayName ||
-          home.team?.displayName ||
-          "Local",
-
-        localLogo:
-          home.team?.logo ||
-          PLACEHOLDER_LOGO,
-
-        visitante:
-          away.team?.shortDisplayName ||
-          away.team?.displayName ||
-          "Visitante",
-
-        visitanteLogo:
-          away.team?.logo ||
-          PLACEHOLDER_LOGO,
-
-        gl:
-          Number(home.score || 0),
-
-        gv:
-          Number(away.score || 0),
-
-        estado:
-          statusType === "in"
-            ? "En juego"
-            : statusType === "post"
-              ? "Final"
-              : "Programado",
-
+        id: String(comp.id || event.id || `${home.team?.id}-${away.team?.id}`),
+        local: home.team?.shortDisplayName || home.team?.displayName || "Local",
+        localLogo: getTeamLogoUrl(home.team),
+        visitante: away.team?.shortDisplayName || away.team?.displayName || "Visitante",
+        visitanteLogo: getTeamLogoUrl(away.team),
+        gl: Number(home.score || 0),
+        gv: Number(away.score || 0),
+        estado: statusType === "in" ? "En juego" : statusType === "post" ? "Final" : "Programado",
         statusType,
-
-        detalle:
-          comp.status?.type?.shortDetail ||
-          comp.status?.type?.description ||
-          "",
-
-        // ==================================
-        // RELOJ
-        // ==================================
-
+        detalle: comp.status?.type?.shortDetail || comp.status?.type?.description || "",
         minuto: gameClock.minuto,
         segundo: gameClock.segundo,
-
         minutoJuego: gameClock.minuto,
         segundoJuego: gameClock.segundo,
-
         tiempoJuego: gameClock.tiempoJuego,
-
-        // ==================================
-
         date: dateIso,
-
-        fecha:
-          fmtDateLong(dateIso),
-
-        hora:
-          fmtHour(dateIso)
+        fecha: fmtDateLong(dateIso),
+        hora: fmtHour(dateIso)
       };
     })
     .filter(Boolean);
 
-
   return {
     all,
+    resultados: all.filter((m) => m.statusType !== "pre").sort((a, b) => new Date(b.date) - new Date(a.date)),
+    proximos: all.filter((m) => m.statusType === "pre").sort((a, b) => new Date(a.date) - new Date(b.date))
+  };
+}
 
-    resultados:
-      all
-        .filter(
-          (m) => m.statusType !== "pre"
-        )
-        .sort(
-          (a, b) =>
-            new Date(b.date) -
-            new Date(a.date)
-        ),
+function parseSummaryMatch(raw, fallbackMatchId) {
+  const comp = raw?.header?.competitions?.[0] || raw?.competition || raw?.events?.[0]?.competitions?.[0];
+  if (!comp?.competitors) return null;
 
-    proximos:
-      all
-        .filter(
-          (m) => m.statusType === "pre"
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.date) -
-            new Date(b.date)
-        )
+  const home = comp.competitors.find((c) => c.homeAway === "home") || comp.competitors[0];
+  const away = comp.competitors.find((c) => c.homeAway === "away") || comp.competitors[1];
+
+  if (!home || !away) return null;
+
+  const statusType = comp.status?.type?.state || "pre";
+  const dateIso = comp.date || raw?.header?.competitions?.[0]?.date || raw?.eventDate || raw?.date;
+  const gameClock = getGameClock(comp.status);
+
+  return {
+    id: String(comp.id || fallbackMatchId || raw?.header?.id || raw?.id || ""),
+    local: home.team?.shortDisplayName || home.team?.displayName || "Local",
+    localLogo: getTeamLogoUrl(home.team),
+    visitante: away.team?.shortDisplayName || away.team?.displayName || "Visitante",
+    visitanteLogo: getTeamLogoUrl(away.team),
+    gl: Number(home.score || 0),
+    gv: Number(away.score || 0),
+    estado: statusType === "in" ? "En juego" : statusType === "post" ? "Final" : "Programado",
+    statusType,
+    detalle: comp.status?.type?.shortDetail || comp.status?.type?.description || "",
+    minuto: gameClock.minuto,
+    segundo: gameClock.segundo,
+    minutoJuego: gameClock.minuto,
+    segundoJuego: gameClock.segundo,
+    tiempoJuego: gameClock.tiempoJuego,
+    date: dateIso,
+    fecha: fmtDateLong(dateIso),
+    hora: fmtHour(dateIso)
   };
 }
 
@@ -560,119 +520,7 @@ function mergeStandingsTables(results) {
 }
 
 
-function parseSummaryMatch(
-  raw,
-  fallbackMatchId
-) {
-  const comp =
-    raw?.header?.competitions?.[0] ||
-    raw?.competition ||
-    raw?.events?.[0]?.competitions?.[0];
 
-  if (!comp?.competitors) {
-    return null;
-  }
-
-  const home =
-    comp.competitors.find(
-      (c) => c.homeAway === "home"
-    ) || comp.competitors[0];
-
-  const away =
-    comp.competitors.find(
-      (c) => c.homeAway === "away"
-    ) || comp.competitors[1];
-
-  if (!home || !away) {
-    return null;
-  }
-
-  const statusType =
-    comp.status?.type?.state || "pre";
-
-  const dateIso =
-    comp.date ||
-    raw?.header?.competitions?.[0]?.date ||
-    raw?.eventDate ||
-    raw?.date;
-
-
-  // También guardamos el reloj en el detalle
-  const gameClock =
-    getGameClock(comp.status);
-
-
-  return {
-    id: String(
-      comp.id ||
-      fallbackMatchId ||
-      raw?.header?.id ||
-      raw?.id ||
-      ""
-    ),
-
-    local:
-      home.team?.shortDisplayName ||
-      home.team?.displayName ||
-      "Local",
-
-    localLogo:
-      home.team?.logo ||
-      PLACEHOLDER_LOGO,
-
-    visitante:
-      away.team?.shortDisplayName ||
-      away.team?.displayName ||
-      "Visitante",
-
-    visitanteLogo:
-      away.team?.logo ||
-      PLACEHOLDER_LOGO,
-
-    gl:
-      Number(home.score || 0),
-
-    gv:
-      Number(away.score || 0),
-
-    estado:
-      statusType === "in"
-        ? "En juego"
-        : statusType === "post"
-          ? "Final"
-          : "Programado",
-
-    statusType,
-
-    detalle:
-      comp.status?.type?.shortDetail ||
-      comp.status?.type?.description ||
-      "",
-
-    minuto:
-      gameClock.minuto,
-
-    segundo:
-      gameClock.segundo,
-
-    minutoJuego:
-      gameClock.minuto,
-
-    segundoJuego:
-      gameClock.segundo,
-
-    tiempoJuego:
-      gameClock.tiempoJuego,
-
-    date: dateIso,
-
-    fecha:
-      fmtDateLong(dateIso),
-
-    hora:
-      fmtHour(dateIso)
-  };
-}
 
 
 export {

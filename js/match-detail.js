@@ -76,42 +76,24 @@ function extractCards(raw) {
 
 function translateMatchDetailText(text) {
   const replacements = [
-    [/Own Goal!/gi, "Gol en contra!"],
-    [/Goal!/gi, "Gol!"],
+    [/Own Goal!/gi, "¡Gol en contra!"],
+    [/Goal!/gi, "¡Gol!"],
 
-    [/is shown the Tarjeta amarilla.?/gi, "recibe tarjeta amarilla"],
-    [/is shown the Tarjeta roja.?/gi, "recibe tarjeta roja"],
+    [/is shown the Tarjeta amarilla\.?/gi, "recibe tarjeta amarilla "],
+    [/is shown the Tarjeta roja\.?/gi, "recibe tarjeta roja "],
 
-    [/is shown the yellow card.?/gi, "recibe tarjeta amarilla"],
-    [/is shown a yellow card.?/gi, "recibe tarjeta amarilla"],
-    [/is shown the red card.?/gi, "recibe tarjeta roja"],
-    [/is shown a red card.?/gi, "recibe tarjeta roja"],
-
-    [/is shown the yellow card/gi, "recibe tarjeta amarilla"],
-    [/is shown a yellow card/gi, "recibe tarjeta amarilla"],
-    [/is shown the red card/gi, "recibe tarjeta roja"],
-    [/is shown a red card/gi, "recibe tarjeta roja"],
-
-    [/is shown the Tarjeta amarilla/gi, "recibe tarjeta amarilla"],
-    [/is shown the Tarjeta roja/gi, "recibe tarjeta roja"],
-
-    [/is shown the/gi, "recibe la"],
-    [/is shown a/gi, "recibe una"],
+    [/is shown the yellow card\.?/gi, "recibe tarjeta amarilla "],
+    [/is shown a yellow card\.?/gi, "recibe tarjeta amarilla "],
+    [/is shown the red card\.?/gi, "recibe tarjeta roja "],
+    [/is shown a red card\.?/gi, "recibe tarjeta roja "],
 
     [/right footed shot from the centre of the box/gi, "remate de derecha desde el centro del área"],
-    [/right footed shot from the center of the box/gi, "remate de derecha desde el centro del área"],
-
     [/left footed shot from the centre of the box/gi, "remate de izquierda desde el centro del área"],
-    [/left footed shot from the center of the box/gi, "remate de izquierda desde el centro del área"],
-
     [/right footed shot/gi, "remate de derecha"],
     [/left footed shot/gi, "remate de izquierda"],
-
     [/header/gi, "cabezazo"],
 
     [/from the centre of the box/gi, "desde el centro del área"],
-    [/from the center of the box/gi, "desde el centro del área"],
-
     [/from the right side of the box/gi, "desde el costado derecho del área"],
     [/from the left side of the box/gi, "desde el costado izquierdo del área"],
 
@@ -120,67 +102,16 @@ function translateMatchDetailText(text) {
     [/to the top left corner/gi, "arriba a la izquierda"],
     [/to the top right corner/gi, "arriba a la derecha"],
 
-    [/to the centre of the gol./gi, "al medio del arco"],
-    [/remate de derecha desde el centro del área to the centre of the gol./gi, "al medio del arco"],
-
     [/assisted by/gi, "asistido por"],
-
     [/for a bad foul/gi, "por una falta dura"],
     [/for a foul/gi, "por una falta"],
-    [/bad foul/gi, "falta dura"],
-
-    [/\bSubstitution\b/gi, "Sustitución"],
-    [/\bsubstitution\b/gi, "sustitución"],
-
-    [/\bYellow Card\b/gi, "Tarjeta amarilla"],
-    [/\byellow card\b/gi, "tarjeta amarilla"],
-
-    [/\bRed Card\b/gi, "Tarjeta roja"],
-    [/\bred card\b/gi, "tarjeta roja"],
-
-    [/\bBooking\b/gi, "Amonestación"],
-    [/\bbooking\b/gi, "amonestación"],
-
-    [/\bCaution\b/gi, "Amonestación"],
-    [/\bcaution\b/gi, "amonestación"],
-
-    [/\bSent Off\b/gi, "Expulsado"],
-    [/\bsent off\b/gi, "expulsado"],
-
-    [/\bSending Off\b/gi, "Expulsión"],
-    [/\bsending off\b/gi, "expulsión"],
-
-    [/\bPenalty\b/gi, "Penal"],
-    [/\bpenalty\b/gi, "penal"],
-
-    [/\bMissed\b/gi, "Fallado"],
-    [/\bmissed\b/gi, "fallado"],
-
-    [/\bSaved\b/gi, "Atajado"],
-    [/\bsaved\b/gi, "atajado"],
-
-    [/\bBlocked\b/gi, "Bloqueado"],
-    [/\bblocked\b/gi, "bloqueado"],
-
-    [/\bOffside\b/gi, "Fuera de juego"],
-    [/\boffside\b/gi, "fuera de juego"],
-
-    [/\bCorner\b/gi, "Córner"],
-    [/\bcorner\b/gi, "córner"],
-
-    [/\bFoul\b/gi, "Falta"],
-    [/\bfoul\b/gi, "falta"],
-
-    [/\bVAR\b/gi, "VAR"],
-
-    [/\bgoal\b/gi, "gol"]
+    [/bad foul/gi, "falta dura"]
   ];
 
-  return replacements.reduce(
-    (acc, [pattern, replacement]) =>
-      acc.replace(pattern, replacement),
-    String(text || "")
-  );
+  return replacements
+    .reduce((acc, [pattern, replacement]) => acc.replace(pattern, replacement), String(text || ""))
+    .replace(/\s+/g, " ") // Sanea espacios dobles accidentales
+    .trim();
 }
 
 function eventKindFromText(text) {

@@ -1,56 +1,43 @@
-/*
-  PROMIEDOS AR — sistema de diseño
-  ---------------------------------
-  Direccion: pagina de fixture de diario deportivo argentino (linaje Ole /
-  cronica de cancha), no un dashboard de SaaS. Papel de diario, tinta negra,
-  rojo de mastil, verde de cancha. Los partidos se agrupan por fecha con un
-  "dateline" tipografico grueso: es el elemento firma de la pagina y resuelve
-  la necesidad real (separar resultados/proximos por dia) con un recurso
-  editorial, no decorativo.
+/* ==========================================================================
+   FIXTURE — DIARIO DEPORTIVO ARGENTINO
+   Linaje Olé / Crónica de Cancha
 
-  Paleta:
-    --paper        #ece7d8  fondo, papel de diario
-    --paper-raised #f7f4ea  tarjetas / superficies elevadas ("hoja limpia")
-    --ink          #18140f  texto principal, mastil
-    --ink-soft     #6d6353  texto secundario
-    --rule         #cfc6ab  filetes / divisores
-    --red          #c31d1f  tinta de mastil, en vivo, descenso
-    --pitch        #1f6b3a  verde de cancha: puntero / clasificacion directa
-    --orange       #c1631f  Libertadores
-    --sky          #2f7fae  Sudamericana / playoffs
-    --gold         #b3841a  acentos puntuales (hover, foco)
+   Unificación de:
+   - Fixture / resultados
+   - Navegación de fechas
+   - Filtros
+   - Tablas de posiciones
+   - Copas internacionales
+   - Acordeón de competencias
+   - Modal de partidos
+   - Estados en vivo
+   - Responsive
+   - Hover / animaciones / glassmorphism
 
-  Tipografia:
-    Teko            titulares condensados (ya se usaba, se refuerza el rol)
-    Roboto Condensed  cuerpo de texto, columnas densas de diario
-    Space Mono      "tipo agate": minutos, resultados, tablas de posiciones
+   NOTA:
+   Los colores y tipografías originales se mantienen intactos.
+   ========================================================================== */
 
-  ------------------------------------------------------------------------
-  NOTA DE ESTA PASADA: colores y tipografias INTACTOS, ni un hex tocado.
-  Todo lo nuevo es hover / animacion / glassmorphism. Donde el glass
-  necesita transparencia, se deriva con color-mix() de la MISMA variable
-  (no se inventa ningun color nuevo) — ver lista de 18 mejoras al final
-  de la respuesta.
 
-  NOTA DE ESTA REVISION: el bloque "Acordeon de Competencias" que llego
-  agregado al final rompia esa misma regla (colores sueltos, radio suelto,
-  tipografia hardcodeada, un token --panel-bg que no existe en :root). Se
-  corrigio con el mismo criterio que el resto de esta pasada: derivar de
-  una variable existente via color-mix(), no inventar. Tambien se sumo
-  .detail-back aca (antes vivia duplicado en detail.html y team.html).
-*/
+/* ==========================================================================
+   TOKENS
+   ========================================================================== */
 
 :root {
   --paper: #69ac48;
   --paper-raised: #e2e2e2;
   --paper-dim: #e2dcc8;
+
   --ink: #22201e;
   --ink-soft: #0a0a0a;
   --ink-faint: #080808;
+
   --rule: #cfc6ab;
   --rule-strong: #b7ac8c;
+
   --red: #c31d1f;
   --red-dim: #8f1517;
+
   --pitch: #1f6b3a;
   --orange: #c1631f;
   --sky: #2f7fae;
@@ -61,9 +48,19 @@
   --font-mono: "Space Mono", "Roboto Condensed", monospace;
 
   --radius: 3px;
-  --shadow-card: 0 1px 0 var(--rule), 0 8px 18px -14px rgba(24, 20, 15, 0.35);
-  --shadow-raised: 0 18px 40px -20px rgba(24, 20, 15, 0.45);
+
+  --shadow-card:
+    0 1px 0 var(--rule),
+    0 8px 18px -14px rgba(24, 20, 15, 0.35);
+
+  --shadow-raised:
+    0 18px 40px -20px rgba(24, 20, 15, 0.45);
 }
+
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
 
 * {
   box-sizing: border-box;
@@ -77,11 +74,16 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+
   color: var(--ink);
   font-family: var(--font-body);
+
   background-color: var(--paper);
   background-image:
-    radial-gradient(rgba(24, 20, 15, 0.07) 0.6px, transparent 0.6px);
+    radial-gradient(
+      rgba(24, 20, 15, 0.07) 0.6px,
+      transparent 0.6px
+    );
   background-size: 10px 10px;
 }
 
@@ -95,32 +97,46 @@ body {
   outline-offset: 2px;
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-display);
+h1,
+h2,
+h3,
+h4 {
   margin: 0;
+  font-family: var(--font-display);
 }
 
-/* ---------- Mastil / topbar ---------- */
+
+/* ==========================================================================
+   MÁSTIL / TOPBAR
+   ========================================================================== */
 
 .topbar {
-  max-width: 1180px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem 1.1rem 1.1rem;
+
+  padding: 1.2rem 1.1rem 0.9rem;
+
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+
   gap: 1rem;
+
   border-bottom: 3px solid var(--ink);
+
   position: relative;
 }
 
 .topbar::after {
   content: "";
+
   position: absolute;
   left: 0;
   right: 0;
   bottom: -6px;
+
   height: 1px;
+
   background: var(--rule-strong);
 }
 
@@ -132,19 +148,25 @@ h1, h2, h3, h4 {
 
 .brand-kicker {
   margin: 0;
+
   color: var(--red);
+
   text-transform: uppercase;
   letter-spacing: 0.22em;
+
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 0.68rem;
 }
 
 .brand-title {
-  font-size: clamp(2.4rem, 7vw, 4.1rem);
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+
   letter-spacing: 0.01em;
   line-height: 0.86;
+
   text-transform: uppercase;
+
   transition: letter-spacing 0.3s ease;
 }
 
@@ -154,48 +176,85 @@ h1, h2, h3, h4 {
 
 .topbar-right {
   display: flex;
-  gap: 0.5rem;
   align-items: center;
-  flex-wrap: wrap;
   justify-content: flex-end;
+
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .date-pill {
   margin: 0;
-  text-transform: capitalize;
+
   padding: 0.4rem 0.7rem;
+
+  text-transform: capitalize;
+
   font-family: var(--font-mono);
   font-size: 0.76rem;
-  color: var(--ink-soft);
   letter-spacing: 0.01em;
-  transition: color 0.2s ease;
-  background: color-mix(in srgb, var(--paper-raised) 55%, transparent);
+
+  color: var(--ink-soft);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--paper-raised) 55%,
+      transparent
+    );
+
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--rule-strong) 70%,
+      transparent
+    );
+
+  border-radius: 999px;
+
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid color-mix(in srgb, var(--rule-strong) 70%, transparent);
-  border-radius: 999px;
+
+  transition: color 0.2s ease;
 }
+
+
+/* ==========================================================================
+   BOTÓN REFRESCAR
+   ========================================================================== */
 
 .refresh-btn {
   cursor: pointer;
+
+  padding: 0.5rem 0.85rem;
+
   font-family: var(--font-body);
   font-weight: 700;
+  font-size: 0.82rem;
+
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.82rem;
+
   border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+
   background: transparent;
   color: var(--ink);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.85rem;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
-    transform 0.15s ease, box-shadow 0.15s ease;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .refresh-btn:hover {
   background: var(--ink);
   color: var(--paper-raised);
+
   transform: translateY(-2px);
+
   box-shadow: var(--shadow-raised);
 }
 
@@ -206,38 +265,49 @@ h1, h2, h3, h4 {
 
 .refresh-btn:disabled {
   opacity: 0.55;
+
   cursor: not-allowed;
+
   background: transparent;
   color: var(--ink);
+
   transform: none;
   box-shadow: none;
+
   animation: softPulse 1.4s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .refresh-btn:disabled {
-    animation: none;
-  }
-}
 
-/* ---------- Boton "volver" (paginas de detalle) ---------- */
+/* ==========================================================================
+   BOTÓN VOLVER — DETALLE
+   ========================================================================== */
 
 .detail-back {
   display: inline-flex;
   align-items: center;
+
   gap: 0.4rem;
-  text-decoration: none;
-  color: var(--ink);
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius);
+
   padding: 0.45rem 0.75rem;
+
+  text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 0.82rem;
+
+  color: var(--ink);
+
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+
   background: transparent;
-  transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  transition:
+    background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .detail-back::before {
@@ -249,64 +319,113 @@ h1, h2, h3, h4 {
   color: var(--paper-raised);
 }
 
-/* ---------- Layout general ---------- */
+
+/* ==========================================================================
+   LAYOUT PRINCIPAL — 3 COLUMNAS
+   ========================================================================== */
 
 .layout {
-  max-width: 1180px;
+  max-width: 1400px;
   margin: 0 auto;
+
   padding: 1.1rem;
+
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+
+  grid-template-columns:
+    240px
+    minmax(0, 1.8fr)
+    330px;
+
+  gap: 1.25rem;
+
   align-items: start;
 }
 
+
+/* ==========================================================================
+   PANELES
+   ========================================================================== */
+
 .panel {
-  background: color-mix(in srgb, var(--paper-raised) 82%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  padding: 1rem 1.05rem 1.15rem;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--paper-raised) 82%,
+      transparent
+    );
+
   border: 1px solid var(--rule);
   border-radius: var(--radius);
+
   box-shadow: var(--shadow-card);
-  padding: 1rem 1.05rem 1.15rem;
-  transition: box-shadow 0.25s ease;
+
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 }
 
 .panel:hover {
-  box-shadow: 0 2px 0 var(--rule), 0 14px 30px -16px rgba(24, 20, 15, 0.45);
+  box-shadow:
+    0 2px 0 var(--rule),
+    0 14px 30px -16px rgba(24, 20, 15, 0.45);
 }
 
 .panel-controls {
-  grid-column: span 12;
+  grid-column: span 1;
 }
 
 .panel-matches {
-  grid-column: span 6;
+  grid-column: span 1;
 }
 
 .panel-table {
-  grid-column: span 6;
+  grid-column: span 1;
+
+  position: sticky;
+  top: 1rem;
 }
 
+
+/* ==========================================================================
+   TÍTULOS DE SECCIÓN
+   ========================================================================== */
+
 .section-title-wrap {
-  border-bottom: 2px solid var(--ink);
   margin-bottom: 0.75rem;
   padding-bottom: 0.35rem;
+
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+
+  border-bottom: 2px solid var(--ink);
 }
 
 .section-title {
-  letter-spacing: 0.01em;
   font-size: 1.7rem;
+
+  letter-spacing: 0.01em;
+
   text-transform: uppercase;
 }
 
-/* ---------- Reveal / entrada ---------- */
+
+/* ==========================================================================
+   REVEAL
+   ========================================================================== */
 
 .reveal {
-  animation: riseIn 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation:
+    riseIn
+    0.5s
+    cubic-bezier(0.2, 0.7, 0.3, 1)
+    both;
 }
 
 .panel-matches.reveal {
@@ -322,51 +441,57 @@ h1, h2, h3, h4 {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: none;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    animation: none;
-  }
-}
 
-/* ---------- Boletin en vivo ---------- */
+/* ==========================================================================
+   BOLETÍN EN VIVO
+   ========================================================================== */
 
 .live-banner {
   margin: 0 0 0.85rem;
+
+  padding: 0.5rem 0.7rem;
+
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+
   background: var(--ink);
   color: var(--paper-raised);
+
   border-radius: var(--radius);
-  padding: 0.5rem 0.7rem;
+
   font-family: var(--font-mono);
   font-size: 0.76rem;
   letter-spacing: 0.03em;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .live-banner::before {
   content: "";
+
   width: 7px;
   height: 7px;
-  border-radius: 50%;
-  background: var(--red);
+
   flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  background: var(--red);
+
   animation: dotPulse 1.4s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .live-banner::before {
-    animation: none;
-  }
-}
 
-/* ---------- Tabs / segmentado ---------- */
+/* ==========================================================================
+   TABS / SEGMENTADO
+   ========================================================================== */
 
 .segmented {
   display: flex;
@@ -375,82 +500,110 @@ h1, h2, h3, h4 {
 }
 
 .segment-btn {
+  position: relative;
+
+  padding: 0.4rem 0.75rem;
+
   border: 1.5px solid var(--rule-strong);
+  border-radius: var(--radius);
+
   background: transparent;
   color: var(--ink-soft);
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius);
+
   font-family: var(--font-body);
   font-weight: 700;
+  font-size: 0.85rem;
+
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  font-size: 0.85rem;
+
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease,
-    transform 0.15s ease, box-shadow 0.15s ease;
+
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .segment-btn:hover {
   border-color: var(--ink);
   color: var(--ink);
+
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px -10px rgba(24, 20, 15, 0.5);
+
+  box-shadow:
+    0 6px 14px -10px
+    rgba(24, 20, 15, 0.5);
 }
 
 .segment-btn.active,
 .segment-btn[aria-selected="true"] {
+  overflow: hidden;
+
   background: var(--ink);
   border-color: var(--ink);
   color: var(--paper-raised);
-  position: relative;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset, 0 4px 10px -8px rgba(24, 20, 15, 0.6);
-  overflow: hidden;
+
+  box-shadow:
+    0 0 0 1px
+      rgba(255, 255, 255, 0.25)
+      inset,
+    0 4px 10px -8px
+      rgba(24, 20, 15, 0.6);
 }
 
 .segment-btn.active::before,
 .segment-btn[aria-selected="true"]::before {
   content: "";
+
   position: absolute;
   top: 0;
   left: -60%;
+
   width: 40%;
   height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+
+  background:
+    linear-gradient(
+      115deg,
+      transparent,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    );
+
   animation: sweepOnce 1s ease-out;
-}
-
-@keyframes sweepOnce {
-  from { left: -60%; }
-  to { left: 130%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .segment-btn.active::before,
-  .segment-btn[aria-selected="true"]::before {
-    animation: none;
-    display: none;
-  }
 }
 
 .segment-btn.active::after,
 .segment-btn[aria-selected="true"]::after {
   content: "";
+
   position: absolute;
+
   left: 0.65rem;
   right: 0.65rem;
   bottom: -4px;
+
   height: 3px;
+
   background: var(--red);
 }
 
 .segment-btn:focus-visible {
   border-color: var(--red);
-  box-shadow: 0 0 0 2px rgba(195, 29, 31, 0.16);
+
+  box-shadow:
+    0 0 0 2px
+    rgba(195, 29, 31, 0.16);
 }
 
 .segment-btn:disabled {
   opacity: 0.4;
+
   pointer-events: none;
+
   transform: none;
   box-shadow: none;
 }
@@ -459,41 +612,69 @@ h1, h2, h3, h4 {
   margin-top: 0.85rem;
 }
 
-/* ---------- Toolbar: busqueda + toggle ---------- */
+@keyframes sweepOnce {
+  from {
+    left: -60%;
+  }
+
+  to {
+    left: 130%;
+  }
+}
+
+
+/* ==========================================================================
+   TOOLBAR — BÚSQUEDA + TOGGLE
+   ========================================================================== */
 
 .toolbar {
   margin-top: 0.85rem;
+
   display: flex;
-  gap: 0.85rem;
   align-items: end;
   flex-wrap: wrap;
+
+  gap: 0.85rem;
 }
 
 .search-wrap {
   display: grid;
-  gap: 0.3rem;
+
   min-width: 16rem;
+
   flex: 1;
+
+  gap: 0.3rem;
 }
 
 .search-wrap span {
+  color: var(--ink-soft);
+
   font-family: var(--font-mono);
   font-size: 0.68rem;
+
   letter-spacing: 0.1em;
+
   text-transform: uppercase;
-  color: var(--ink-soft);
 }
 
 .search-wrap input {
   width: 100%;
+
+  padding: 0.5rem 0.65rem;
+
   border: 1.5px solid var(--rule-strong);
   border-radius: var(--radius);
+
   background: var(--paper-raised);
   color: var(--ink);
+
   font: inherit;
   font-family: var(--font-body);
-  padding: 0.5rem 0.65rem;
-  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .search-wrap input:hover {
@@ -502,25 +683,40 @@ h1, h2, h3, h4 {
 
 .search-wrap input:focus {
   border-color: var(--ink);
+
   outline: none;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 12%, transparent);
+
+  box-shadow:
+    0 0 0 4px
+    color-mix(
+      in srgb,
+      var(--ink) 12%,
+      transparent
+    );
 }
 
 .toggle-wrap {
   display: flex;
   align-items: center;
+
   gap: 0.4rem;
+
+  padding-bottom: 0.55rem;
+
+  color: var(--ink);
+
   font-weight: 700;
   font-size: 0.85rem;
-  padding-bottom: 0.55rem;
+
   cursor: pointer;
-  color: var(--ink);
 }
 
 .toggle-wrap input {
-  accent-color: var(--red);
   width: 16px;
   height: 16px;
+
+  accent-color: var(--red);
+
   transition: transform 0.15s ease;
 }
 
@@ -533,22 +729,248 @@ h1, h2, h3, h4 {
   pointer-events: none;
 }
 
-/* ---------- Lista de partidos + dateline por dia ---------- */
+
+/* ==========================================================================
+   NAVEGACIÓN DE FECHAS
+   ========================================================================== */
+
+.agenda-filter-bar {
+  margin-bottom: 0.85rem;
+  padding: 0.6rem 0.8rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 0.5rem;
+
+  background: var(--paper-dim);
+
+  border-bottom: 2px solid var(--ink);
+}
+
+.date-navigator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.date-btn {
+  padding: 0.25rem 0.55rem;
+
+  background: transparent;
+
+  border: 1px solid var(--ink);
+
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.date-btn:hover {
+  background: var(--ink);
+  color: var(--paper-raised);
+}
+
+.date-btn:active {
+  transform: scale(0.97);
+}
+
+.date-current {
+  padding: 0 0.3rem;
+
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+}
+
+.quick-filters {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.filter-btn {
+  padding: 0.25rem 0.6rem;
+
+  background: transparent;
+
+  border: 1px solid var(--rule-strong);
+
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.filter-btn:hover {
+  border-color: var(--ink);
+}
+
+.filter-btn.active {
+  background: var(--ink);
+  color: var(--paper-raised);
+
+  border-color: var(--ink);
+}
+
+.filter-btn.live-badge {
+  color: var(--red);
+  font-weight: 700;
+}
+
+
+/* ==========================================================================
+   ACORDEÓN DE COMPETENCIAS
+   ========================================================================== */
+
+.league-accordion {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.4rem;
+
+  margin-bottom: 1rem;
+}
+
+.accordion-item {
+  overflow: hidden;
+
+  background: var(--paper-dim);
+
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.accordion-header {
+  width: 100%;
+
+  padding: 0.5rem 0.75rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: var(--pitch);
+  color: var(--paper-raised);
+
+  border: none;
+
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.accordion-header:hover {
+  background:
+    color-mix(
+      in srgb,
+      var(--pitch) 80%,
+      black
+    );
+}
+
+.accordion-header:active {
+  transform: scale(0.995);
+}
+
+.country-info {
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+}
+
+.flag-icon {
+  width: 18px;
+  height: 13px;
+
+  object-fit: cover;
+
+  border-radius: 2px;
+}
+
+.chevron {
+  font-size: 0.75rem;
+
+  transition:
+    transform 0.2s ease;
+}
+
+.accordion-item.active .chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  display: none;
+  flex-direction: column;
+
+  padding: 0.4rem;
+
+  gap: 0.3rem;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--ink) 4%,
+      transparent
+    );
+}
+
+.accordion-item.active .accordion-content {
+  display: flex;
+}
+
+
+/* ==========================================================================
+   LISTA DE PARTIDOS
+   ========================================================================== */
 
 .matches-list {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+
+  gap: 0.4rem;
 }
+
+
+/* ==========================================================================
+   DATELINE POR DÍA
+   ========================================================================== */
 
 .day-divider {
   margin: 0.85rem 0 0.4rem;
   padding-bottom: 0.28rem;
-  border-bottom: 2px solid var(--ink);
+
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+
   gap: 0.5rem;
+
+  border-bottom: 2px solid var(--ink);
 }
 
 .day-divider:first-child {
@@ -556,57 +978,96 @@ h1, h2, h3, h4 {
 }
 
 .day-label {
+  color: var(--ink);
+
   font-family: var(--font-display);
   font-size: 1.32rem;
+
   letter-spacing: 0.015em;
-  text-transform: uppercase;
-  color: var(--ink);
   line-height: 1;
+
+  text-transform: uppercase;
 }
 
 .day-count {
+  color: var(--ink-faint);
+
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--ink-faint);
-  text-transform: uppercase;
+
   letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+
   white-space: nowrap;
 }
 
+
+/* ==========================================================================
+   TARJETA DE PARTIDO
+   ========================================================================== */
+
 .match-card {
-  border: none;
-  border-bottom: 1px solid var(--rule);
-  background: transparent;
-  border-radius: 0;
-  padding: 0.55rem 0.15rem;
   position: relative;
+
   overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.35rem;
+
+  padding: 0.75rem 0.9rem;
+
+  background: var(--paper-raised);
+
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
 }
 
 .match-card.clickable {
   cursor: pointer;
-  transition: background 0.15s ease, padding-left 0.15s ease,
-    transform 0.15s ease, box-shadow 0.15s ease;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .match-card.clickable:hover,
 .match-card.clickable:focus-visible {
   background: var(--paper-dim);
-  padding-left: 0.5rem;
+
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px -12px rgba(24, 20, 15, 0.5);
+
+  box-shadow:
+    0 6px 16px -12px
+    rgba(24, 20, 15, 0.5);
 }
 
 .match-card.clickable::after {
   content: "";
+
   position: absolute;
+
   top: 0;
   left: -30%;
+
   width: 30%;
   height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+
+  background:
+    linear-gradient(
+      115deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+
   transform: skewX(-12deg);
+
   transition: left 0.55s ease;
+
   pointer-events: none;
 }
 
@@ -615,16 +1076,68 @@ h1, h2, h3, h4 {
   left: 130%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .match-card.clickable::after {
-    display: none;
-  }
+.match-card.live {
+  background:
+    color-mix(
+      in srgb,
+      var(--red) 6%,
+      var(--paper-raised)
+    );
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--red) 35%,
+      var(--rule)
+    );
 }
 
-.match-card.live {
-  background: rgba(195, 29, 31, 0.06);
-  border-bottom-color: rgba(195, 29, 31, 0.35);
+
+/* ==========================================================================
+   FILA PRINCIPAL DEL PARTIDO
+   ========================================================================== */
+
+.match-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 0.8rem;
 }
+
+.team-info {
+  display: flex;
+  align-items: center;
+
+  gap: 0.45rem;
+
+  flex: 1;
+
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.team-info.away {
+  justify-content: flex-end;
+}
+
+.match-score {
+  padding: 0 0.4rem;
+
+  color: var(--ink);
+
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+
+
+/* ==========================================================================
+   EQUIPOS / ESCUDOS
+   ========================================================================== */
 
 .teams,
 .meta {
@@ -634,36 +1147,37 @@ h1, h2, h3, h4 {
 .teams-line {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
   flex-wrap: wrap;
+
+  gap: 0.45rem;
 }
 
 .team-with-logo {
   display: inline-flex;
   align-items: center;
+
   gap: 0.32rem;
 }
 
 .team-logo {
   width: 21px;
   height: 21px;
-  border-radius: 50%;
-  border: 1px solid var(--rule-strong);
-  background: var(--paper-raised);
-  object-fit: cover;
+
   flex: 0 0 auto;
-  transition: transform 0.2s ease;
+
+  object-fit: cover;
+
+  background: var(--paper-raised);
+
+  border: 1px solid var(--rule-strong);
+  border-radius: 50%;
+
+  transition:
+    transform 0.2s ease;
 }
 
 .match-card.clickable:hover .team-logo {
   transform: scale(1.12);
-}
-
-.vs {
-  color: var(--ink-faint);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
 }
 
 .teams strong {
@@ -671,32 +1185,87 @@ h1, h2, h3, h4 {
   font-size: 0.98rem;
 }
 
+.vs {
+  color: var(--ink-faint);
+
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+
+  text-transform: uppercase;
+}
+
+
+/* ==========================================================================
+   GOLEADORES
+   ========================================================================== */
+
+.match-scorers-preview {
+  padding-top: 0.35rem;
+
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 0.5rem;
+
+  color: var(--ink-soft);
+
+  border-top: 1px dotted var(--rule-strong);
+
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.scorer-item {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.25rem;
+}
+
+
+/* ==========================================================================
+   META / ESTADOS
+   ========================================================================== */
+
 .meta {
   margin-top: 0.28rem;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  font-family: var(--font-mono);
+
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+
   gap: 0.4rem;
+
+  color: var(--ink-soft);
+
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
 }
 
 .status {
   display: inline-flex;
   align-items: center;
+
   gap: 0.3rem;
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+
   color: var(--ink-soft);
+
+  font-size: 0.66rem;
+
+  letter-spacing: 0.06em;
+
+  text-transform: uppercase;
 }
 
 .status::before {
   content: "";
+
   width: 6px;
   height: 6px;
+
   border-radius: 50%;
+
   background: var(--ink-faint);
 }
 
@@ -710,104 +1279,115 @@ h1, h2, h3, h4 {
 
 .badge-live {
   color: var(--red);
+
   font-weight: 700;
 }
 
 .badge-live::before {
   background: var(--red);
-  animation: dotPulse 1.2s ease-in-out infinite;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .badge-live::before {
-    animation: none;
-  }
+  animation:
+    dotPulse
+    1.2s
+    ease-in-out
+    infinite;
 }
 
 .detail {
   color: var(--ink-faint);
 }
 
-/* ---------- Tablas de posiciones ---------- */
+
+/* ==========================================================================
+   TABLAS DE POSICIONES
+   ========================================================================== */
 
 .standings-sections {
-  display: grid;
-  gap: 0.9rem;
+  display: flex;
+  flex-direction: column;
+
+  gap: 1rem;
 }
 
 .zone-block {
+  padding: 0;
+
+  background: transparent;
+
   border: none;
   border-radius: 0;
-  padding: 0;
-  background: transparent;
 }
 
 .sub-title {
   margin: 0 0 0.5rem;
+  padding-bottom: 0.35rem;
+
+  color: var(--ink-soft);
+
+  border-bottom: 1px solid var(--rule);
+
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 700;
+
   letter-spacing: 0.08em;
+
   text-transform: uppercase;
-  color: var(--ink-soft);
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 0.35rem;
 }
 
 .table-wrap {
   overflow-x: auto;
-}
 
-.table-wrap::-webkit-scrollbar,
-.modal-box::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
-}
-
-.table-wrap::-webkit-scrollbar-thumb,
-.modal-box::-webkit-scrollbar-thumb {
-  background: var(--rule-strong);
-  border-radius: 999px;
-}
-
-.table-wrap,
-.modal-box {
   scrollbar-width: thin;
-  scrollbar-color: var(--rule-strong) transparent;
+
+  scrollbar-color:
+    var(--rule-strong)
+    transparent;
 }
 
 table {
   width: 100%;
+
   border-collapse: collapse;
+
   min-width: 20rem;
+
   font-family: var(--font-mono);
 }
 
 th,
 td {
-  text-align: left;
   padding: 0.34rem 0.4rem;
+
+  text-align: left;
+
   border-bottom: 1px solid var(--rule);
+
   font-size: 0.82rem;
 }
 
 th {
   color: var(--ink-faint);
-  text-transform: uppercase;
+
   font-size: 0.62rem;
-  letter-spacing: 0.07em;
   font-weight: 700;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
 }
 
 th:nth-child(1),
 td:nth-child(1) {
   width: 8%;
+
   color: var(--ink-faint);
 }
 
 th:nth-child(2),
 td:nth-child(2) {
   width: 54%;
+
   font-family: var(--font-body);
 }
 
@@ -816,14 +1396,11 @@ td:nth-child(3) {
   width: 12%;
 }
 
-.cell-pts {
-  font-weight: 700;
-  color: var(--ink);
-}
-
 tbody tr {
   position: relative;
-  transition: background 0.15s ease;
+
+  transition:
+    background 0.15s ease;
 }
 
 tbody tr:hover {
@@ -832,72 +1409,158 @@ tbody tr:hover {
 
 tbody tr::before {
   content: "";
+
   position: absolute;
+
   left: 0;
   top: 0;
   bottom: 0;
+
   width: 0;
+
   background: var(--ink);
+
   opacity: 0.5;
-  transition: width 0.15s ease;
+
+  transition:
+    width 0.15s ease;
 }
 
 tbody tr:hover::before {
   width: 3px;
 }
 
+.cell-pts {
+  color: var(--ink);
+
+  font-weight: 700;
+}
+
 tr.playoff td:first-child {
   color: var(--ink);
+
   font-weight: 700;
 }
 
 tr.playoff {
-  box-shadow: inset 3px 0 0 var(--sky);
+  box-shadow:
+    inset 3px 0 0 var(--sky);
 }
 
 tr.row-leader {
-  box-shadow: inset 3px 0 0 var(--pitch);
+  box-shadow:
+    inset 3px 0 0 var(--pitch);
 }
 
 tr.row-libertadores {
-  box-shadow: inset 3px 0 0 var(--orange);
+  box-shadow:
+    inset 3px 0 0 var(--orange);
 }
 
 tr.row-sudamericana {
-  box-shadow: inset 3px 0 0 var(--sky);
+  box-shadow:
+    inset 3px 0 0 var(--sky);
 }
 
 tr.row-descenso {
-  box-shadow: inset 3px 0 0 var(--red);
+  box-shadow:
+    inset 3px 0 0 var(--red);
 }
 
-/* ---------- Playoffs / anual / promedios ---------- */
+
+/* ==========================================================================
+   TABLAS DE COPAS / GRUPOS
+   ========================================================================== */
+
+.panel-table.cup-mode .standings-sections {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(260px, 1fr)
+    );
+
+  gap: 0.85rem;
+}
+
+.cup-group-card {
+  padding: 0.75rem;
+
+  background: var(--paper-raised);
+
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.cup-group-card .group-title {
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.15rem;
+
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+
+  border-bottom:
+    2px solid var(--pitch);
+}
+
+.team-cell {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  text-align: left;
+
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+
+/* ==========================================================================
+   PLAYOFFS / ANUAL / PROMEDIOS
+   ========================================================================== */
 
 .playoff-box {
   margin-top: 0.9rem;
+  padding: 0.75rem 0 0;
+
+  background: transparent;
+
   border: none;
   border-top: 2px solid var(--ink);
   border-radius: 0;
-  padding: 0.75rem 0 0;
-  background: transparent;
 }
 
 .playoff-list {
   display: grid;
+
   gap: 0.5rem;
 }
 
 .cross-card {
+  padding: 0.5rem 0.6rem;
+
+  background: var(--paper-raised);
+
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  padding: 0.5rem 0.6rem;
-  background: var(--paper-raised);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .cross-card:hover {
   transform: translateY(-2px);
+
   border-color: var(--ink-soft);
+
   box-shadow: var(--shadow-card);
 }
 
@@ -909,49 +1572,134 @@ tr.row-descenso {
   margin-top: 0.2rem;
 }
 
-/* ---------- Estado vacio ---------- */
 
-.empty {
-  margin: 0;
-  border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  padding: 0.95rem;
-  color: var(--ink-soft);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
+/* ==========================================================================
+   CONTROLES DE TABLA
+   ========================================================================== */
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 0.85rem;
+
+  margin-bottom: 0.6rem;
 }
 
-/* ---------- Referencias / leyenda ---------- */
+.table-controls .search-wrap {
+  flex: 0 0 auto;
+
+  min-width: 0;
+}
+
+#season-select {
+  padding: 0.5rem 0.65rem;
+
+  border: 1.5px solid var(--rule-strong);
+  border-radius: var(--radius);
+
+  background: var(--paper-raised);
+  color: var(--ink);
+
+  font: inherit;
+  font-family: var(--font-body);
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+#season-select:hover {
+  border-color: var(--ink);
+}
+
+#season-select:active {
+  transform: scale(0.98);
+}
+
+#season-select:focus-visible {
+  border-color: var(--ink);
+
+  outline: none;
+}
+
+.table-context {
+  margin: 0 0 0.75rem;
+
+  color: var(--ink-soft);
+
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+}
+
+.box-note {
+  margin: -0.25rem 0 0.6rem;
+
+  color: var(--ink-soft);
+
+  font-size: 0.78rem;
+
+  font-style: italic;
+}
+
+
+/* ==========================================================================
+   LEYENDA
+   ========================================================================== */
 
 .legend {
   margin-top: 0.85rem;
-  display: flex;
-  gap: 0.5rem 1rem;
-  flex-wrap: wrap;
-  border-top: 1px solid var(--rule);
   padding-top: 0.7rem;
+
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 0.5rem 1rem;
+
+  border-top: 1px solid var(--rule);
 }
 
 .legend-item {
   position: relative;
+
   padding-left: 0.85rem;
+
+  color: var(--ink-soft);
+
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  text-transform: uppercase;
+
   letter-spacing: 0.03em;
-  color: var(--ink-soft);
-  transition: color 0.15s ease;
+
+  text-transform: uppercase;
+
+  transition:
+    color 0.15s ease;
 }
 
 .legend-item::before {
   content: "";
+
   position: absolute;
+
   left: 0;
   top: 0.15rem;
+
   width: 8px;
   height: 8px;
+
   border-radius: 2px;
-  transition: transform 0.15s ease;
+
+  transition:
+    transform 0.15s ease;
 }
 
 .legend-item:hover {
@@ -978,252 +1726,198 @@ tr.row-descenso {
   background: var(--red);
 }
 
-/* ---------- Responsive ---------- */
 
-@media (max-width: 920px) {
-  .panel-matches,
-  .panel-table {
-    grid-column: span 12;
-  }
-}
+/* ==========================================================================
+   ESTADOS VACÍOS
+   ========================================================================== */
 
-@media (max-width: 768px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
+.empty {
+  margin: 0;
+  padding: 0.95rem;
 
-  .panel-matches,
-  .panel-table,
-  .panel-controls {
-    grid-column: span 1;
-  }
+  color: var(--ink-soft);
 
-  .panel-matches {
-    order: 2;
-  }
-
-  .panel-table {
-    order: 3;
-  }
-}
-
-@media (max-width: 650px) {
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.7rem;
-  }
-
-  .topbar-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .search-wrap {
-    min-width: 100%;
-  }
-
-  .day-divider {
-    flex-wrap: wrap;
-  }
-}
-
-@keyframes dotPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(195, 29, 31, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(195, 29, 31, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(195, 29, 31, 0);
-  }
-}
-
-@keyframes softPulse {
-  0%, 100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-/* ---------- Selector de torneo / temporada ---------- */
-
-.table-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.85rem;
-  margin-bottom: 0.6rem;
-}
-
-.table-controls .search-wrap {
-  flex: 0 0 auto;
-  min-width: 0;
-}
-
-#season-select {
-  border: 1.5px solid var(--rule-strong);
+  border: 1px dashed var(--rule-strong);
   border-radius: var(--radius);
-  background: var(--paper-raised);
-  color: var(--ink);
-  font: inherit;
-  font-family: var(--font-body);
-  font-weight: 700;
-  padding: 0.5rem 0.65rem;
-  cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.1s ease;
-}
 
-#season-select:hover {
-  border-color: var(--ink);
-}
-
-#season-select:active {
-  transform: scale(0.98);
-}
-
-#season-select:focus-visible {
-  border-color: var(--ink);
-  outline: none;
-}
-
-.table-context {
-  margin: 0 0 0.75rem;
-  color: var(--ink-soft);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.82rem;
 }
 
-.box-note {
-  margin: -0.25rem 0 0.6rem;
+.empty-inline {
   color: var(--ink-soft);
-  font-size: 0.78rem;
-  font-style: italic;
+
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
 }
 
-/* ---------- Modal de detalle de partido ---------- */
+
+/* ==========================================================================
+   MODAL DE DETALLE
+   ========================================================================== */
 
 .modal-overlay {
   position: fixed;
+
   inset: 0;
+
   z-index: 1000;
-  background: rgba(24, 20, 15, 0.55);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+
+  padding: 1rem;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  animation: overlayFadeIn 0.2s ease both;
+
+  background:
+    rgba(24, 20, 15, 0.55);
+
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+
+  animation:
+    overlayFadeIn
+    0.2s
+    ease
+    both;
 }
 
 .modal-overlay.hidden {
   display: none;
 }
 
-@keyframes overlayFadeIn {
-  from { background: rgba(24, 20, 15, 0); backdrop-filter: blur(0); -webkit-backdrop-filter: blur(0); }
-  to { background: rgba(24, 20, 15, 0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-}
-
 .modal-box {
-  background: color-mix(in srgb, var(--paper-raised) 88%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  position: relative;
+
+  width: 100%;
+  max-width: 34rem;
+  max-height: 85vh;
+
+  overflow-y: auto;
+
+  padding: 1.4rem;
+
   color: var(--ink);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--paper-raised) 88%,
+      transparent
+    );
+
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  max-width: 34rem;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 1.4rem;
-  position: relative;
+
   box-shadow: var(--shadow-raised);
-  animation: modalPop 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+
+  animation:
+    modalPop
+    0.22s
+    cubic-bezier(0.2, 0.8, 0.3, 1)
+    both;
+
+  scrollbar-width: thin;
+
+  scrollbar-color:
+    var(--rule-strong)
+    transparent;
 }
 
-@keyframes modalPop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.modal-box::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .modal-overlay,
-  .modal-box {
-    animation: none;
-  }
+.modal-box::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+
+  border-radius: 999px;
 }
 
 .modal-close {
   position: absolute;
+
   top: 0.6rem;
   right: 0.7rem;
+
+  padding: 0.2rem 0.5rem;
+
   background: transparent;
+
   border: none;
+  border-radius: var(--radius);
+
   color: var(--ink);
+
   font-size: 1.6rem;
   line-height: 1;
+
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius);
-  transition: background 0.15s ease, transform 0.2s ease;
+
+  transition:
+    background 0.15s ease,
+    transform 0.2s ease;
 }
 
 .modal-close:hover {
   background: var(--paper-dim);
+
   transform: rotate(90deg);
 }
 
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.7rem;
   margin-top: 0.4rem;
   margin-bottom: 0.2rem;
   padding-bottom: 0.6rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 0.7rem;
+
   border-bottom: 2px solid var(--ink);
 }
 
 .modal-header .team-with-logo {
   display: flex;
   align-items: center;
+
   gap: 0.45rem;
+
   flex: 1;
 }
 
 .modal-score {
+  color: var(--ink);
+
   font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 700;
+
   white-space: nowrap;
-  color: var(--ink);
 }
 
 .modal-meta {
+  margin: 0.5rem 0 1.1rem;
+
   color: var(--ink-soft);
+
   font-family: var(--font-mono);
   font-size: 0.76rem;
-  margin: 0.5rem 0 1.1rem;
 }
 
 .modal-loading {
   color: var(--ink-soft);
-  font-style: italic;
+
   font-family: var(--font-mono);
   font-size: 0.85rem;
+
+  font-style: italic;
 }
 
 .modal-section {
@@ -1235,131 +1929,1189 @@ tr.row-descenso {
 }
 
 .detail-list {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+
   display: flex;
   flex-direction: column;
+
   gap: 0.2rem;
+
+  list-style: none;
 }
 
 .detail-list li {
-  font-size: 0.88rem;
   padding: 0.28rem 0.2rem;
+
+  font-size: 0.88rem;
+
   border-bottom: 1px dashed var(--rule);
   border-radius: 2px;
-  transition: background 0.15s ease, padding-left 0.15s ease;
+
+  transition:
+    background 0.15s ease,
+    padding-left 0.15s ease;
 }
 
 .detail-list li:hover {
-  background: var(--paper-dim);
   padding-left: 0.4rem;
-}
 
-.empty-inline {
-  color: var(--ink-soft);
-  font-size: 0.82rem;
-  font-family: var(--font-mono);
+  background: var(--paper-dim);
 }
 
 .lineups-grid {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   gap: 1rem;
 }
 
 .lineups-grid h4 {
   margin: 0 0 0.4rem;
+
   font-family: var(--font-body);
-  font-weight: 700;
   font-size: 0.88rem;
+  font-weight: 700;
 }
 
 body.modal-open {
   overflow: hidden;
 }
 
-@media (max-width: 480px) {
+
+/* ==========================================================================
+   ANIMACIONES
+   ========================================================================== */
+
+@keyframes overlayFadeIn {
+  from {
+    background: rgba(24, 20, 15, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+
+  to {
+    background: rgba(24, 20, 15, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow:
+      0 0 0 0
+      rgba(195, 29, 31, 0.5);
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 7px
+      rgba(195, 29, 31, 0);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0
+      rgba(195, 29, 31, 0);
+  }
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
+}
+
+
+/* ==========================================================================
+   REDUCCIÓN DE MOVIMIENTO
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .refresh-btn:disabled,
+  .live-banner::before,
+  .badge-live::before,
+  .segment-btn.active::before,
+  .segment-btn[aria-selected="true"]::before,
+  .modal-overlay,
+  .modal-box {
+    animation: none;
+  }
+
+  .match-card.clickable::after {
+    display: none;
+  }
+}
+
+
+/* ==========================================================================
+RESPONSIVE — TABLET
+========================================================================== */
+
+@media (max-width: 1080px) {
+
+  .layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .panel-table {
+    grid-column: span 2;
+    position: static;
+  }
+
+}
+
+
+/* ==========================================================================
+RESPONSIVE — TABLET GRANDE
+========================================================================== */
+
+@media (max-width: 920px) {
+
+  .layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+  }
+
+  .panel-controls,
+  .panel-matches,
+  .panel-table {
+    grid-column: span 2;
+  }
+
+  .panel-table {
+    position: static;
+  }
+
+}
+
+
+/* ==========================================================================
+RESPONSIVE — MOBILE
+========================================================================== */
+
+@media (max-width: 768px) {
+
+  /* ------------------------------------------------------------------------
+  BODY / ESTRUCTURA
+  ------------------------------------------------------------------------ */
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    width: 100%;
+    padding: 0.9rem 0.85rem 0.75rem;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 0.7rem;
+  }
+
+  .topbar::after {
+    bottom: -5px;
+  }
+
+  .brand-wrap {
+    gap: 0.12rem;
+  }
+
+  .brand-kicker {
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+  }
+
+  .brand-title {
+    font-size: clamp(2.6rem, 13vw, 4rem);
+    line-height: 0.8;
+  }
+
+  .topbar-right {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 1fr auto;
+
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .date-pill {
+    min-width: 0;
+    padding: 0.4rem 0.55rem;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 0.64rem;
+  }
+
+  .refresh-btn {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  LAYOUT
+  ------------------------------------------------------------------------ */
+
+  .layout {
+    width: 100%;
+    padding: 0.75rem;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.75rem;
+  }
+
+  .panel {
+    width: 100%;
+    min-width: 0;
+
+    padding: 0.8rem;
+
+    border-radius: var(--radius);
+  }
+
+  .panel-controls,
+  .panel-matches,
+  .panel-table {
+    width: 100%;
+    grid-column: auto;
+  }
+
+  .panel-controls {
+    order: 1;
+  }
+
+  .panel-matches {
+    order: 2;
+  }
+
+  .panel-table {
+    order: 3;
+    position: static;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  TÍTULOS
+  ------------------------------------------------------------------------ */
+
+  .section-title-wrap {
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.3rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  SEGMENTED / TABS
+  ------------------------------------------------------------------------ */
+
+  .segmented {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 0.35rem;
+  }
+
+  .segment-btn {
+    width: 100%;
+    min-height: 38px;
+
+    padding: 0.4rem 0.45rem;
+
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .view-switch {
+    margin-top: 0.7rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  TOOLBAR / BÚSQUEDA
+  ------------------------------------------------------------------------ */
+
+  .toolbar {
+    width: 100%;
+
+    margin-top: 0.7rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 0.65rem;
+  }
+
+  .search-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-wrap span {
+    font-size: 0.6rem;
+  }
+
+  .search-wrap input {
+    min-height: 40px;
+    padding: 0.55rem 0.65rem;
+
+    font-size: 0.9rem;
+  }
+
+  .toggle-wrap {
+    width: 100%;
+    padding-bottom: 0;
+
+    min-height: 34px;
+
+    font-size: 0.78rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  NAVEGACIÓN DE FECHAS
+  ------------------------------------------------------------------------ */
+
+  .agenda-filter-bar {
+    margin-bottom: 0.7rem;
+    padding: 0.55rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 0.55rem;
+  }
+
+  .date-navigator {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+
+    gap: 0.3rem;
+  }
+
+  .date-btn {
+    width: 100%;
+    min-height: 34px;
+
+    padding: 0.25rem;
+
+    font-size: 0.65rem;
+  }
+
+  .date-current {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 0.2rem;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 1.05rem;
+    text-align: center;
+  }
+
+  .quick-filters {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 0.3rem;
+  }
+
+  .filter-btn {
+    width: 100%;
+    min-height: 32px;
+
+    padding: 0.25rem 0.3rem;
+
+    font-size: 0.62rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  ACORDEÓN DE COMPETENCIAS
+  ------------------------------------------------------------------------ */
+
+  .league-accordion {
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .accordion-header {
+    min-height: 40px;
+
+    padding: 0.45rem 0.6rem;
+
+    font-size: 1.05rem;
+  }
+
+  .country-info {
+    min-width: 0;
+    gap: 0.4rem;
+  }
+
+  .country-info span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .flag-icon {
+    width: 17px;
+    height: 12px;
+    flex: 0 0 auto;
+  }
+
+  .accordion-content {
+    padding: 0.3rem;
+    gap: 0.3rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  DÍAS
+  ------------------------------------------------------------------------ */
+
+  .day-divider {
+    margin: 0.7rem 0 0.35rem;
+    padding-bottom: 0.25rem;
+
+    gap: 0.3rem;
+  }
+
+  .day-label {
+    font-size: 1.15rem;
+  }
+
+  .day-count {
+    font-size: 0.58rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  TARJETAS DE PARTIDOS
+  ------------------------------------------------------------------------ */
+
+  .matches-list {
+    gap: 0.3rem;
+  }
+
+  .match-card {
+    padding: 0.65rem 0.65rem;
+    gap: 0.3rem;
+  }
+
+  .match-main-row {
+    gap: 0.35rem;
+  }
+
+  .team-info {
+    min-width: 0;
+
+    gap: 0.3rem;
+
+    font-size: 0.86rem;
+    line-height: 1.05;
+  }
+
+  .team-info.away {
+    text-align: right;
+  }
+
+  .team-info .team-with-logo {
+    min-width: 0;
+  }
+
+  .team-info strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .team-logo {
+    width: 19px;
+    height: 19px;
+  }
+
+  .match-score {
+    flex: 0 0 auto;
+
+    min-width: 42px;
+
+    padding: 0 0.15rem;
+
+    font-size: 1.55rem;
+    text-align: center;
+  }
+
+  .teams strong {
+    font-size: 0.86rem;
+  }
+
+  .vs {
+    font-size: 0.62rem;
+  }
+
+  .meta {
+    margin-top: 0.2rem;
+
+    justify-content: center;
+
+    gap: 0.3rem;
+
+    font-size: 0.7rem;
+  }
+
+  .status {
+    font-size: 0.58rem;
+  }
+
+  .detail {
+    font-size: 0.62rem;
+  }
+
+  .match-scorers-preview {
+    padding-top: 0.3rem;
+
+    gap: 0.35rem;
+
+    font-size: 0.62rem;
+  }
+
+  .scorer-item {
+    gap: 0.2rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  PARTIDOS EN VIVO
+  ------------------------------------------------------------------------ */
+
+  .live-banner {
+    margin-bottom: 0.65rem;
+
+    padding: 0.45rem 0.55rem;
+
+    font-size: 0.65rem;
+  }
+
+  .live-banner::before {
+    width: 6px;
+    height: 6px;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  TABLAS
+  ------------------------------------------------------------------------ */
+
+  .table-controls {
+    width: 100%;
+
+    margin-bottom: 0.55rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 0.55rem;
+  }
+
+  .table-controls .search-wrap {
+    width: 100%;
+  }
+
+  #season-select {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .table-context {
+    margin-bottom: 0.6rem;
+    font-size: 0.62rem;
+  }
+
+  .box-note {
+    font-size: 0.7rem;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 420px;
+  }
+
+  th,
+  td {
+    padding: 0.3rem 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  th {
+    font-size: 0.56rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  COPAS / GRUPOS
+  ------------------------------------------------------------------------ */
+
+  .panel-table.cup-mode .standings-sections {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    gap: 0.55rem;
+  }
+
+  .cup-group-card {
+    padding: 0.6rem;
+  }
+
+  .cup-group-card .group-title {
+    font-size: 1.05rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  PLAYOFFS
+  ------------------------------------------------------------------------ */
+
+  .playoff-box {
+    margin-top: 0.7rem;
+    padding-top: 0.6rem;
+  }
+
+  .cross-card {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .cross-card .teams {
+    font-size: 0.78rem;
+  }
+
+  .cross-card .meta {
+    font-size: 0.65rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  LEYENDA
+  ------------------------------------------------------------------------ */
+
+  .legend {
+    margin-top: 0.7rem;
+    padding-top: 0.6rem;
+
+    gap: 0.4rem 0.75rem;
+  }
+
+  .legend-item {
+    padding-left: 0.75rem;
+    font-size: 0.58rem;
+  }
+
+  .legend-item::before {
+    width: 7px;
+    height: 7px;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  TORNEO
+  ------------------------------------------------------------------------ */
+
+  .tournament-link {
+    min-height: 40px;
+
+    padding: 0.45rem 0.55rem;
+
+    font-size: 1.05rem;
+  }
+
+  .tournament-arrow {
+    font-size: 0.95rem;
+  }
+
+
+  /* ------------------------------------------------------------------------
+  MODAL
+  ------------------------------------------------------------------------ */
+
+  .modal-overlay {
+    padding: 0.65rem;
+    align-items: flex-end;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: none;
+    max-height: 88vh;
+
+    padding: 1rem;
+
+    border-radius: 5px 5px 0 0;
+  }
+
+  .modal-close {
+    top: 0.5rem;
+    right: 0.5rem;
+
+    font-size: 1.4rem;
+  }
+
+  .modal-header {
+    margin-top: 0.25rem;
+    padding-bottom: 0.5rem;
+
+    gap: 0.4rem;
+  }
+
+  .modal-score {
+    font-size: 1.7rem;
+  }
+
+  .modal-meta {
+    margin: 0.4rem 0 0.8rem;
+    font-size: 0.65rem;
+  }
+
+  .modal-section {
+    margin-top: 0.8rem;
+  }
+
+  .detail-list li {
+    font-size: 0.78rem;
+  }
+
   .lineups-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+}
+
+
+/* ==========================================================================
+RESPONSIVE — TELÉFONO CHICO
+========================================================================== */
+
+@media (max-width: 480px) {
+
+  .topbar {
+    padding: 0.8rem 0.7rem 0.7rem;
+  }
+
+  .brand-kicker {
+    font-size: 0.54rem;
+  }
+
+  .brand-title {
+    font-size: clamp(2.45rem, 15vw, 3.4rem);
+  }
+
+  .topbar-right {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .date-pill {
+    font-size: 0.58rem;
+  }
+
+  .refresh-btn {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.66rem;
+  }
+
+  .layout {
+    padding: 0.6rem;
+    gap: 0.6rem;
+  }
+
+  .panel {
+    padding: 0.7rem;
+  }
+
+  .section-title {
+    font-size: 1.35rem;
+  }
+
+
+  /* Tabs */
+
+  .segmented {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .segment-btn {
+    min-height: 36px;
+    font-size: 0.66rem;
+  }
+
+
+  /* Fecha */
+
+  .agenda-filter-bar {
+    padding: 0.45rem;
+  }
+
+  .date-navigator {
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+  }
+
+  .date-btn {
+    min-height: 32px;
+    font-size: 0.6rem;
+  }
+
+  .date-current {
+    font-size: 0.95rem;
+  }
+
+  .quick-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .filter-btn {
+    min-height: 30px;
+    font-size: 0.56rem;
+  }
+
+
+  /* Acordeón */
+
+  .accordion-header {
+    min-height: 38px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.98rem;
+  }
+
+
+  /* Partidos */
+
+  .match-card {
+    padding: 0.55rem;
+  }
+
+  .match-main-row {
+    gap: 0.2rem;
+  }
+
+  .team-info {
+    gap: 0.22rem;
+    font-size: 0.78rem;
+  }
+
+  .team-logo {
+    width: 17px;
+    height: 17px;
+  }
+
+  .match-score {
+    min-width: 36px;
+    font-size: 1.4rem;
+  }
+
+  .teams strong {
+    font-size: 0.78rem;
+  }
+
+  .meta {
+    font-size: 0.64rem;
+  }
+
+  .status {
+    font-size: 0.54rem;
+  }
+
+  .match-scorers-preview {
+    font-size: 0.57rem;
+  }
+
+
+  /* Días */
+
+  .day-label {
+    font-size: 1.05rem;
+  }
+
+  .day-count {
+    font-size: 0.54rem;
+  }
+
+
+  /* Tablas */
+
+  table {
+    min-width: 390px;
+  }
+
+  th,
+  td {
+    padding: 0.28rem;
+    font-size: 0.68rem;
+  }
+
+  th {
+    font-size: 0.52rem;
+  }
+
+
+  /* Modal */
+
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-box {
+    max-height: 92vh;
+    padding: 0.85rem;
+  }
+
+}
+
+
+/* ==========================================================================
+RESPONSIVE — TELÉFONO MUY CHICO
+========================================================================== */
+
+@media (max-width: 380px) {
+
+  .topbar {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  .brand-title {
+    font-size: 2.35rem;
+  }
+
+  .layout {
+    padding: 0.5rem;
+  }
+
+  .panel {
+    padding: 0.6rem;
+  }
+
+  .topbar-right {
     grid-template-columns: 1fr;
   }
 
-  .table-controls {
-    align-items: stretch;
+  .refresh-btn {
+    width: 100%;
   }
+
+  .date-pill {
+    width: 100%;
+    text-align: center;
+  }
+
+  .segmented {
+    grid-template-columns: 1fr;
+  }
+
+  .segment-btn {
+    min-height: 34px;
+  }
+
+  .team-info {
+    font-size: 0.72rem;
+  }
+
+  .team-logo {
+    width: 16px;
+    height: 16px;
+  }
+
+  .match-score {
+    min-width: 32px;
+    font-size: 1.3rem;
+  }
+
+  .day-label {
+    font-size: 0.98rem;
+  }
+
+  .date-current {
+    font-size: 0.88rem;
+  }
+
 }
 
-/* ---------- Acordeon de competencias ----------
-   Corregido para depender de los tokens reales: el verde/hover/radio/
-   tipografia sueltos que llegaron aca se reemplazaron por var(--pitch),
-   var(--radius), var(--font-display), etc. El hover oscuro se deriva del
-   mismo verde con color-mix() en vez de un segundo hex inventado aparte,
-   siguiendo el mismo criterio que el resto de esta pasada. */
 
-.league-accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+/* ==========================================================================
+TOUCH DEVICES
+========================================================================== */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .panel:hover {
+    transform: none;
+  }
+
+  .match-card.clickable:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .match-card.clickable:hover::after {
+    display: none;
+  }
+
+  .team-logo {
+    transform: none !important;
+  }
+
+  .cross-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .refresh-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
 }
 
-.accordion-item {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--paper-dim);
+
+/* ==========================================================================
+REDUCCIÓN DE MOVIMIENTO
+========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .refresh-btn:disabled,
+  .live-banner::before,
+  .badge-live::before,
+  .segment-btn.active::before,
+  .segment-btn[aria-selected="true"]::before,
+  .modal-overlay,
+  .modal-box {
+    animation: none;
+  }
+
+  .match-card.clickable::after {
+    display: none;
+  }
+
 }
 
-.accordion-header {
-  width: 100%;
-  display: flex;
+/* ==========================================
+   BOTÓN ENLACE A TORNEO (.tournament-link)
+   ========================================== */
+
+.tournament-link {
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background: var(--pitch);
-  color: var(--paper-raised);
-  border: none;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 1.5px solid var(--rule-strong);
+  border-radius: var(--radius);
   font-family: var(--font-display);
-  font-size: 1.2rem;
-  letter-spacing: 0.02em;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: 
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.accordion-header:hover {
-  background: color-mix(in srgb, var(--pitch) 80%, black);
+.tournament-link:hover {
+  background: var(--ink);
+  color: var(--paper-raised);
+  border-color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -6px rgba(24, 20, 15, 0.4);
 }
 
-.country-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.tournament-link:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
-.flag-icon {
-  width: 18px;
-  height: 13px;
-  object-fit: cover;
-  border-radius: 2px;
+/* Flecha animada (Space Mono para mantener el tono técnico) */
+.tournament-arrow {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--red);
+  transition: transform 0.2s ease, color 0.15s ease;
 }
 
-.chevron {
-  font-size: 0.75rem;
-  transition: transform 0.2s ease;
+.tournament-link:hover .tournament-arrow {
+  color: var(--paper-raised);
+  transform: translateX(4px);
 }
 
-.accordion-item.active .chevron {
-  transform: rotate(180deg);
-}
-
-.accordion-content {
-  display: none;
-  padding: 0.4rem;
-  flex-direction: column;
-  gap: 0.3rem;
-  background: rgba(24, 20, 15, 0.04);
-}
-
-.accordion-item.active .accordion-content {
-  display: flex;
+.tournament-link:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
 }

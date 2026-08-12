@@ -1,15 +1,35 @@
 /* ==========================================================================
    ESTILOS EXCLUSIVOS PARA LA FICHA DEL CLUB (team.html)
+   --------------------------------------------------------------------------
+   Consolidado: el archivo anterior tenia .team-match-card definido 4 veces,
+   .team-standings-table 2 veces, y .squad-grid/.squad-card con nombres de
+   clase (squad-number/squad-info/squad-pos) que no coincidian con lo que
+   arma team-main.js (squad-jersey/squad-details/squad-name/squad-position).
+   Quedo una sola definicion de cada cosa, mas lo que faltaba:
+   .team-matches-section, .team-section-title, .team-toggle-more (el boton
+   "Ver mas"), y .detail-empty/.detail-loading (usados por el JS pero nunca
+   definidos ac치).
+
+   Usa las variables del sistema global (--paper, --ink, --font-body, etc.)
+   con fallbacks propios por si este archivo se carga antes de tiempo o
+   solo.
    ========================================================================== */
 
+:root {
+  --team-accent: #19622b;
+  --team-win: #19622b;
+  --team-draw: #d4a017;
+  --team-loss: var(--red, #c31d1f);
+}
+
 body.team-page {
-  background: 
+  background:
     radial-gradient(circle at 10% 10%, rgba(31, 107, 58, 0.12), transparent 45%),
     radial-gradient(circle at 90% 90%, rgba(195, 29, 31, 0.08), transparent 45%),
     var(--paper, #e3e0d5);
   color: var(--ink, #111111);
   margin: 0;
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
+  font-family: var(--font-body, "Roboto Condensed", sans-serif);
 }
 
 .team-shell {
@@ -18,13 +38,23 @@ body.team-page {
   padding: 1.25rem 1rem;
 }
 
-.team-panel {
+/* .panel-box es el mismo tratamiento visual que .team-panel: ambas clases
+   conviven porque el JS de las secciones de partidos usa "panel-box" y el
+   resto del markup usa "team-panel". */
+.team-panel,
+.panel-box {
   border: 1px solid var(--rule, #c8c5b8);
   border-radius: calc(var(--radius, 8px) * 1.5);
   background: var(--paper-raised, #f4f2ea);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
   padding: 1.5rem;
   overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.team-panel:hover,
+.panel-box:hover {
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.09);
 }
 
 /* ---------- Hero del Club ---------- */
@@ -42,10 +72,15 @@ body.team-page {
   height: 72px;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  transition: transform 0.2s ease;
+}
+
+.team-profile-header:hover .team-profile-logo {
+  transform: scale(1.05);
 }
 
 .team-profile-info h2 {
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
+  font-family: var(--font-body, "Roboto Condensed", sans-serif);
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 900;
   margin: 0;
@@ -57,8 +92,9 @@ body.team-page {
 .team-profile-meta {
   display: flex;
   gap: 1.25rem;
+  flex-wrap: wrap;
   margin-top: 0.5rem;
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.78rem;
   color: var(--ink-soft, #555555);
   text-transform: uppercase;
@@ -72,10 +108,11 @@ body.team-page {
   gap: 0.5rem;
   border-bottom: 2px solid var(--rule, #c8c5b8);
   margin: 1.25rem 0 1.5rem;
+  overflow-x: auto;
 }
 
 .team-tab-btn {
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
+  font-family: var(--font-body, "Roboto Condensed", sans-serif);
   font-weight: 800;
   font-size: 0.92rem;
   text-transform: uppercase;
@@ -86,87 +123,210 @@ body.team-page {
   border-bottom: 3px solid transparent;
   color: var(--ink-soft, #555);
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .team-tab-btn:hover {
   color: var(--ink, #111);
 }
 
-.team-tab-btn.active {
-  color: var(--ink, #111);
-  border-bottom-color: #19622b;
+.team-tab-btn:focus-visible {
+  outline: 2px solid var(--team-accent);
+  outline-offset: 2px;
 }
 
-/* ---------- Lista de Partidos del Club ---------- */
+.team-tab-btn.active {
+  color: var(--ink, #111);
+  border-bottom-color: var(--team-accent);
+}
+
+/* ---------- Secciones de partidos (Resultados / Proximos) ---------- */
+
+.team-matches-section + .team-matches-section {
+  margin-top: 1.25rem;
+}
+
+.team-section-title {
+  font-family: var(--font-display, var(--font-body, sans-serif));
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink, #111);
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ink, #111);
+}
+
+.team-toggle-more {
+  display: block;
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.9rem;
+  background: transparent;
+  border: 1.5px dashed var(--rule, #c8c5b8);
+  border-radius: var(--radius, 6px);
+  color: var(--ink-soft, #555);
+  font-family: var(--font-mono, "Space Mono", monospace);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.team-toggle-more:hover {
+  background: rgba(25, 98, 43, 0.06);
+  border-color: var(--team-accent);
+  border-style: solid;
+  color: var(--team-accent);
+}
+
+.team-toggle-more:focus-visible {
+  outline: 2px solid var(--team-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Agrupacion por fecha ---------- */
+
+.team-fixture-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.team-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.team-date-header {
+  font-family: var(--font-mono, "Space Mono", monospace);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink-soft, #555555);
+  padding-bottom: 0.35rem;
+  border-bottom: 1.5px solid var(--rule, #c8c5b8);
+}
 
 .team-matches-list {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
+
+/* ---------- Tarjeta de partido (definicion unica) ---------- */
 
 .team-match-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.2rem;
-  background: rgba(0, 0, 0, 0.025);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--paper-raised, #ffffff);
   border: 1px solid var(--rule, #c8c5b8);
+  border-left: 5px solid var(--rule, #c8c5b8);
   border-radius: var(--radius, 6px);
-  transition: background 0.15s ease;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, border-left-color 0.15s ease;
 }
 
 .team-match-card:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.035);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.team-match-card:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.team-match-card.outcome-win {
+  border-left-color: var(--team-win);
+  background: rgba(25, 98, 43, 0.04);
+}
+
+.team-match-card.outcome-draw {
+  border-left-color: var(--team-draw);
+  background: rgba(212, 160, 23, 0.05);
+}
+
+.team-match-card.outcome-loss {
+  border-left-color: var(--team-loss);
+  background: rgba(195, 29, 31, 0.04);
+}
+
+.team-match-card.scheduled {
+  border-left-color: var(--rule, #c8c5b8);
 }
 
 .team-match-teams {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
+  flex-wrap: wrap;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
 }
 
 .team-match-score {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-weight: 900;
-  font-size: 1.1rem;
-  background: #19622b;
+  font-size: 1rem;
+  padding: 0.3rem 0.8rem;
   color: #ffffff;
-  padding: 0.25rem 0.75rem;
   border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-/* ---------- Tabla de Posición Individual ---------- */
-
-.team-standings-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
-  margin-top: 0.5rem;
+.team-match-score.outcome-win {
+  background: var(--team-win);
 }
 
-.team-standings-table th,
-.team-standings-table td {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  border-bottom: 1px solid var(--rule, #c8c5b8);
+.team-match-score.outcome-draw {
+  background: var(--team-draw);
 }
 
-.team-standings-table th {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+.team-match-score.outcome-loss {
+  background: var(--team-loss);
+}
+
+.team-match-badge {
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: var(--ink-soft, #555);
+  color: var(--ink-soft, #555555);
+  white-space: nowrap;
 }
 
-.team-standings-table tr.highlight {
-  background: rgba(25, 98, 43, 0.12);
-  font-weight: 800;
+/* ---------- Estados vacio / cargando ---------- */
+
+.detail-empty,
+.detail-loading {
+  margin: 0;
+  padding: 1.1rem;
+  text-align: center;
+  border: 1px dashed var(--rule, #c8c5b8);
+  border-radius: var(--radius, 6px);
+  font-family: var(--font-mono, "Space Mono", monospace);
+  font-size: 0.85rem;
+  color: var(--ink-soft, #555555);
 }
-/* ---------- Tabla Estendida y Clasificación ---------- */
+
+.detail-loading {
+  font-style: italic;
+  border-style: solid;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* ---------- Tabla de posiciones ---------- */
 
 .table-responsive {
   width: 100%;
@@ -176,7 +336,7 @@ body.team-page {
 .team-standings-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
+  font-family: var(--font-body, "Roboto Condensed", sans-serif);
   margin-top: 0.25rem;
 }
 
@@ -191,11 +351,19 @@ body.team-page {
 }
 
 .team-standings-table th {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.75rem;
   text-transform: uppercase;
   color: var(--ink-soft, #555555);
   background: rgba(0, 0, 0, 0.02);
+}
+
+.team-standings-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.team-standings-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.025);
 }
 
 .col-team {
@@ -212,40 +380,20 @@ body.team-page {
 }
 
 .col-pts {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.95rem;
 }
-/* ---------- Hover en partidos de la ficha del equipo ---------- */
-.team-match-card {
-  cursor: pointer;
-  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-}
 
-.team-match-card:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-}
-
-.team-match-card:active {
-  transform: translateY(0);
-}
 .col-dg {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
 }
 
 .team-standings-table tr.qualified-row td:first-child {
-  border-left: 3px solid #19622b !important;
+  border-left: 3px solid var(--team-accent) !important;
 }
 
-/* Mantener el resaltado del equipo seleccionado */
 .team-standings-table tr.highlight-row {
   background: rgba(25, 98, 43, 0.15) !important;
-  font-weight: 800;
-}
-/* Fila Resaltada del Equipo Actual */
-.team-standings-table tr.highlight-row {
-  background: rgba(25, 98, 43, 0.18) !important;
   font-weight: 800;
 }
 
@@ -254,12 +402,13 @@ body.team-page {
 }
 
 /* Referencia / Pie de Tabla */
+
 .table-legend {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.85rem;
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.72rem;
   color: var(--ink-soft, #555555);
   text-transform: uppercase;
@@ -268,151 +417,36 @@ body.team-page {
 .legend-indicator {
   width: 12px;
   height: 12px;
-  background: #19622b;
+  background: var(--team-accent);
   border-radius: 2px;
   display: inline-block;
 }
 
-/* ---------- Grilla de Plantel ---------- */
-
-.squad-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.85rem;
-  margin-top: 0.5rem;
-}
-
-.squad-card {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.75rem 1rem;
-  background: var(--paper-raised, #ffffff);
-  border: 1px solid var(--rule, #c8c5b8);
-  border-radius: var(--radius, 6px);
-}
-
-.squad-number {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-weight: 900;
-  font-size: 1.1rem;
-  color: #19622b;
-  width: 2rem;
-}
-
-.squad-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.squad-name {
-  font-weight: 800;
-  font-size: 0.95rem;
-}
-
-.squad-pos {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-size: 0.72rem;
-  color: var(--ink-soft, #555);
-  text-transform: uppercase;
-}
-/* ---------- Agrupación y Colores de Partidos ---------- */
-
-.team-fixture-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.team-date-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.team-date-header {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+.zone-title-badge {
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.82rem;
   font-weight: 800;
   text-transform: uppercase;
-  color: var(--ink-soft, #555555);
-  padding-bottom: 0.35rem;
-  border-bottom: 1.5px solid var(--rule, #c8c5b8);
-}
-
-.team-matches-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.team-match-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: var(--paper-raised, #ffffff);
-  border: 1px solid var(--rule, #c8c5b8);
-  border-left: 5px solid #888888;
-  border-radius: var(--radius, 6px);
-}
-
-/* Colores de Resultado */
-.team-match-card.outcome-win {
-  border-left-color: #19622b; /* Verde Victoria */
-  background: rgba(25, 98, 43, 0.04);
-}
-
-.team-match-card.outcome-draw {
-  border-left-color: #f3cd2b; /* Amarillo Empate */
-  background: rgba(243, 205, 43, 0.04);
-}
-
-.team-match-card.outcome-loss {
-  border-left-color: #c31d1f; /* Rojo Derrota */
-  background: rgba(195, 29, 31, 0.04);
-}
-
-.team-match-card.scheduled {
-  border-left-color: var(--rule, #c8c5b8);
-}
-
-.team-match-teams {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  font-weight: 800;
-  font-size: 0.98rem;
-}
-
-.team-match-score {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-weight: 900;
-  font-size: 1rem;
-  padding: 0.2rem 0.65rem;
-  background: var(--ink, #111111);
-  color: #ffffff;
+  color: var(--ink, #111111);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.4rem 0.75rem;
   border-radius: 4px;
+  margin-bottom: 0.75rem;
+  display: inline-block;
+  border: 1px solid var(--rule, #c8c5b8);
 }
 
-.team-match-badge {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--ink-soft, #555555);
-}
-
-/* ---------- Selector de Torneo ---------- */
+/* ---------- Selector de torneo (Apertura / Clausura) ---------- */
 
 .torneo-selector-bar {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .torneo-sub-btn {
-  font-family: var(--font-body, 'Roboto Condensed', sans-serif);
+  font-family: var(--font-body, "Roboto Condensed", sans-serif);
   font-weight: 800;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -422,6 +456,12 @@ body.team-page {
   background: transparent;
   color: var(--ink-soft, #555);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.torneo-sub-btn:hover {
+  border-color: var(--ink, #111);
+  color: var(--ink, #111);
 }
 
 .torneo-sub-btn.active {
@@ -430,7 +470,10 @@ body.team-page {
   border-color: var(--ink, #111111);
 }
 
-/* ---------- Grilla de Plantel Reestructurada ---------- */
+/* ---------- Grilla de Plantel ---------- */
+/* OJO: usa squad-jersey / squad-details / squad-name / squad-position,
+   que son las clases que arma team-main.js. Las viejas squad-number /
+   squad-info / squad-pos no las genera ningun JS, se sacaron. */
 
 .squad-grid {
   display: grid;
@@ -447,15 +490,21 @@ body.team-page {
   background: var(--paper-raised, #ffffff);
   border: 1px solid var(--rule, #c8c5b8);
   border-radius: var(--radius, 6px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.squad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.07);
 }
 
 .squad-jersey {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-weight: 900;
   font-size: 0.9rem;
   color: #ffffff;
-  background: #19622b;
+  background: var(--team-accent);
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -477,97 +526,63 @@ body.team-page {
 }
 
 .squad-position {
-  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-family: var(--font-mono, "Space Mono", monospace);
   font-size: 0.7rem;
   color: var(--ink-soft, #666);
   text-transform: uppercase;
 }
-/* ---------- Marcadores con Fondo de Color ---------- */
 
-.team-match-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: var(--paper-raised, #ffffff);
-  border: 1px solid var(--rule, #c8c5b8);
-  border-radius: var(--radius, 6px);
-}
-
-.team-match-teams {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  font-weight: 800;
-  font-size: 0.98rem;
-}
-
-.team-match-score {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-weight: 900;
-  font-size: 1rem;
-  padding: 0.35rem 0.85rem;
-  color: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-}
-
-/* Colores Directos del Marcador */
-.team-match-score.outcome-win {
-  background: #19622b; /* Verde Victoria */
-}
-
-.team-match-score.outcome-draw {
-  background: #d4a017; /* Dorado / Amarillo Empate */
-}
-
-.team-match-score.outcome-loss {
-  background: #c31d1f; /* Rojo Derrota */
-}
-
-.team-match-badge {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--ink-soft, #555555);
-}
-
-/* ---------- Indicador de Zona en Tabla ---------- */
-
-.zone-title-badge {
-  font-family: var(--font-mono, 'Space Mono', monospace);
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: var(--ink, #111111);
-  background: rgba(0, 0, 0, 0.05);
-  padding: 0.4rem 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 0.75rem;
-  display: inline-block;
-  border: 1px solid var(--rule, #c8c5b8);
-}
-
-.team-standings-table tr.highlight-row {
-  background: rgba(25, 98, 43, 0.15);
-  font-weight: 800;
-}
+/* ---------- Boton volver ---------- */
 
 .detail-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: var(--ink);
-    border: 1.5px solid var(--ink);
-    border-radius: var(--radius);
-    padding: 0.5rem 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-family: var(--font-body);
-    font-weight: 800;
-    font-size: 0.8rem;
-    background: transparent;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 0.8rem;
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-back:hover {
+  background: var(--ink);
+  color: var(--paper-raised, #fff);
+  transform: translateX(-2px);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .team-profile-header {
+    flex-wrap: wrap;
+    text-align: center;
+    justify-content: center;
   }
+
+  .team-profile-meta {
+    justify-content: center;
+  }
+
+  .team-match-card {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-match-card,
+  .squad-card,
+  .team-profile-logo,
+  .detail-back,
+  .team-toggle-more {
+    transition: none;
+  }
+}

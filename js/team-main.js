@@ -154,12 +154,29 @@ async function initTeamPage() {
 
   try {
     // 1. Petición del Scoreboard (Busca partidos e ID igual que en Argentina)
+    // OJO: el "limit" es obligatorio ac치 — sin el, ESPN devuelve un tope
+    // por default (bastante bajo) de eventos aunque el rango de "dates"
+    // cubra el anio entero, y como vienen ordenados cronologicamente el
+    // resultado se corta a mitad de temporada sin ningun error visible.
+    // Y el "dates" es igual de obligatorio: sin rango, ESPN devuelve el
+    // scoreboard "actual" nada mas.
+    //
+    // El rango en si es distinto segun el tipo de liga:
+    // - AFA (Argentina): la temporada coincide con el anio calendario, asi
+    //   que enero-diciembre de `state.season` alcanza.
+    // - Ligas ESPN (Premier, LaLiga, etc.): la temporada arranca en agosto
+    //   y termina en mayo del anio siguiente. Con `season=2026` nos
+    //   referimos a la temporada 2026/27 (agosto 2026 - mayo 2027), asi que
+    //   el rango tiene que ir de agosto de `state.season` a julio del anio
+    //   siguiente (con margen extra para pretemporada/playoffs tardios).
     const scoreUrl = isEspn
-      ? `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`
-      : `${(API[state.category] || API.primera).scoreboard}?dates=${state.season}0101-${state.season}1231`;
+      ? `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${state.season}0801-${state.season + 1}0731&limit=1000`
+      : `${(API[state.category] || API.primera).scoreboard}?dates=${state.season}0101-${state.season}1231&limit=1000`;
 
     try {
       const scoreData = isEspn ? await safeFetchJson(scoreUrl) : await (await noCacheFetch(scoreUrl)).json();
+
+      console.info(`[team page] eventos recibidos del scoreboard: ${(scoreData.events || []).length}`);
 
       for (const e of (scoreData.events || [])) {
         const comps = e.competitions?.[0]?.competitors || [];
@@ -239,12 +256,21 @@ function parseEventsToMatches(events, teamId, normTeam = "") {
     const awayClean = cleanTeamSearchName(away.team?.displayName || away.team?.name);
 
     let isHome = false;
+    let isAway = false;
+
+    // 1. Filtrar por ID si lo tenemos
     if (teamId) {
       isHome = String(home.team?.id) === String(teamId);
-    } else if (normTeam) {
+      isAway = String(away.team?.id) === String(teamId);
+    } 
+    // 2. Filtrar por Nombre Limpio si no hay ID
+    else if (normTeam) {
       isHome = homeClean.includes(normTeam) || normTeam.includes(homeClean);
-      if (!isHome && !awayClean.includes(normTeam) && !normTeam.includes(awayClean)) return null;
+      isAway = awayClean.includes(normTeam) || normTeam.includes(awayClean);
     }
+
+    // SI NO ES NI LOCAL NI VISITANTE, DESCHAZAMOS EL PARTIDO
+    if (!isHome && !isAway) return null;
 
     const isCompleted = comp.status?.type?.state === "post";
     const homeScore = Number(home.score?.displayValue ?? home.score ?? 0);
@@ -254,7 +280,7 @@ function parseEventsToMatches(events, teamId, normTeam = "") {
     if (isCompleted) {
       if (homeScore === awayScore) {
         outcome = "draw";
-      } else if ((isHome && homeScore > awayScore) || (!isHome && awayScore > homeScore)) {
+      } else if ((isHome && homeScore > awayScore) || (isAway && awayScore > homeScore)) {
         outcome = "win";
       } else {
         outcome = "loss";
@@ -275,7 +301,7 @@ function parseEventsToMatches(events, teamId, normTeam = "") {
       outcome,
       statusText: comp.status?.type?.description || "Programado"
     };
-  }).filter(Boolean);
+  }).filter(Boolean); // Elimina todos los nulls
 }
 
 function renderHero(container, name, logo, leagueLabel, matchCount) {
@@ -293,10 +319,33 @@ function renderHero(container, name, logo, leagueLabel, matchCount) {
   `;
 }
 
-function renderMatchesTab(container, matches) {
+function matchCardHtmlTeam(m) {
+  return `
+    <div class="team-match-card" data-match-id="${m.id}">
+      <div class="team-match-teams">
+        <span class="team-with-logo">
+          <img class="team-logo" src="${m.homeLogo}" alt="" />
+          <span>${m.homeName}</span>
+        </span>
+        <span class="vs">vs</span>
+        <span class="team-with-logo">
+          <img class="team-logo" src="${m.awayLogo}" alt="" />
+          <span>${m.awayName}</span>
+        </span>
+      </div>
+      <div class="team-match-status">
+        ${m.isCompleted
+          ? `<span class="team-match-score outcome-${m.outcome}">${m.homeScore} - ${m.awayScore}</span>`
+          : `<span class="team-match-badge">${m.statusText}</span>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function buildDateGroupsHtml(matches, emptyText) {
   if (!matches.length) {
-    container.innerHTML = '<p class="detail-empty">Sin partidos registrados actualmente.</p>';
-    return;
+    return `<p class="detail-empty">${emptyText}</p>`;
   }
 
   const groups = matches.reduce((acc, match) => {
@@ -306,36 +355,56 @@ function renderMatchesTab(container, matches) {
     return acc;
   }, {});
 
-  const html = Object.entries(groups).map(([dateLabel, items]) => `
+  return Object.entries(groups).map(([dateLabel, items]) => `
     <div class="team-date-group">
       <div class="team-date-header">${dateLabel}</div>
       <div class="team-matches-list">
-        ${items.map((m) => `
-          <div class="team-match-card" data-match-id="${m.id}">
-            <div class="team-match-teams">
-              <span class="team-with-logo">
-                <img class="team-logo" src="${m.homeLogo}" alt="" />
-                <span>${m.homeName}</span>
-              </span>
-              <span class="vs">vs</span>
-              <span class="team-with-logo">
-                <img class="team-logo" src="${m.awayLogo}" alt="" />
-                <span>${m.awayName}</span>
-              </span>
-            </div>
-            <div class="team-match-status">
-              ${m.isCompleted 
-                ? `<span class="team-match-score outcome-${m.outcome}">${m.homeScore} - ${m.awayScore}</span>`
-                : `<span class="team-match-badge">${m.statusText}</span>`
-              }
-            </div>
-          </div>
-        `).join("")}
+        ${items.map(matchCardHtmlTeam).join("")}
       </div>
     </div>
   `).join("");
+}
 
-  container.innerHTML = `<div class="team-fixture-container">${html}</div>`;
+// Cuantos partidos se muestran antes de esconder el resto detras de
+// "Ver mas", tanto para proximos como para resultados (como en la
+// referencia: 5 filas + boton para desplegar).
+const TEAM_SECTION_PAGE_SIZE = 5;
+
+function matchesSectionHtml(sectionKey, title, items, emptyText) {
+  const visible = items.slice(0, TEAM_SECTION_PAGE_SIZE);
+  const hidden = items.slice(TEAM_SECTION_PAGE_SIZE);
+  const hiddenId = `team-section-${sectionKey}-hidden`;
+
+  return `
+    <div class="team-matches-section panel-box">
+      <div class="team-section-title">${title.toUpperCase()}</div>
+      ${buildDateGroupsHtml(visible, emptyText)}
+      ${hidden.length ? `<div class="team-fixture-container" id="${hiddenId}" style="display:none">${buildDateGroupsHtml(hidden, emptyText)}</div>` : ""}
+      ${hidden.length ? `<button type="button" class="team-toggle-more" data-target="${hiddenId}">Ver mas &#8964;</button>` : ""}
+    </div>
+  `;
+}
+
+function renderMatchesTab(container, matches) {
+  if (!matches.length) {
+    container.innerHTML = '<p class="detail-empty">Sin partidos registrados actualmente.</p>';
+    return;
+  }
+
+  // Proximos: los que todavia no se jugaron, del mas cercano al mas lejano.
+  const proximos = matches
+    .filter((m) => !m.isCompleted)
+    .sort((a, b) => new Date(a.dateIso) - new Date(b.dateIso));
+
+  // Resultados: los ya jugados, del mas reciente al mas viejo.
+  const pasados = matches
+    .filter((m) => m.isCompleted)
+    .sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
+
+  container.innerHTML = `
+    ${matchesSectionHtml("resultados", "Resultados", pasados, "Sin resultados registrados todavia.")}
+    ${matchesSectionHtml("proximos", "Proximos partidos", proximos, "No hay proximos partidos programados.")}
+  `;
 
   container.querySelectorAll(".team-match-card[data-match-id]").forEach((card) => {
     card.addEventListener("click", () => {
@@ -352,11 +421,18 @@ function renderMatchesTab(container, matches) {
       window.location.href = `detail.html?${params.toString()}`;
     });
   });
+
+  container.querySelectorAll(".team-toggle-more").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetEl = container.querySelector(`#${btn.dataset.target}`);
+      if (!targetEl) return;
+      const wasVisible = targetEl.style.display !== "none";
+      targetEl.style.display = wasVisible ? "none" : "block";
+      btn.innerHTML = wasVisible ? "Ver mas &#8964;" : "Ver menos &#8963;";
+    });
+  });
 }
 
-// ----------------------------------------------------
-// TABLAS DE POSICIONES
-// ----------------------------------------------------
 // ----------------------------------------------------
 // TABLAS DE POSICIONES (AFA PRIMERA / B NACIONAL / ESPN)
 // ----------------------------------------------------
@@ -581,5 +657,3 @@ async function renderSquadTab(container, teamId, leagueCode = "arg.1") {
     container.innerHTML = '<p class="detail-empty">Error al cargar el plantel.</p>';
   }
 }
-
-document.addEventListener("DOMContentLoaded", initTeamPage);

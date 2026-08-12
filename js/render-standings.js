@@ -97,8 +97,16 @@ function updateTableContext() {
   if (!contextEl) return;
 
   if (state.category !== "primera") {
-    contextEl.textContent =
-      `Temporada ${state.season}`;
+    contextEl.innerHTML = `
+      <button
+        type="button"
+        class="tournament-link"
+        data-open-tournament
+      >
+        Temporada ${state.season}
+        <span class="tournament-arrow">→</span>
+      </button>
+    `;
 
     return;
   }
@@ -107,8 +115,16 @@ function updateTableContext() {
     state.season >= SPLIT_SEASON_MIN_YEAR;
 
   if (!isSplit) {
-    contextEl.textContent =
-      `Temporada ${state.season}`;
+    contextEl.innerHTML = `
+      <button
+        type="button"
+        class="tournament-link"
+        data-open-tournament
+      >
+        Temporada ${state.season}
+        <span class="tournament-arrow">→</span>
+      </button>
+    `;
 
     return;
   }
@@ -131,7 +147,16 @@ function updateTableContext() {
       ` (el ${otherTorneo} no esta disponible por separado en esta fuente todavia)`;
   }
 
-  contextEl.textContent = text;
+  contextEl.innerHTML = `
+    <button
+      type="button"
+      class="tournament-link"
+      data-open-tournament
+    >
+      ${text}
+      <span class="tournament-arrow">→</span>
+    </button>
+  `;
 }
 
 
@@ -684,6 +709,20 @@ function renderEspnStandings() {
   `;
 }
 
+function goToTournamentPage() {
+  const params = new URLSearchParams({
+    category: state.isEspnLeague ? "espn" : state.category,
+    season: String(state.season || CURRENT_SEASON),
+    torneo: state.torneo || "clausura"
+  });
+
+  if (state.isEspnLeague && state.espnLeagueCode) {
+    params.set("league", state.espnLeagueCode);
+  }
+
+  window.location.href = `tournament.html?${params.toString()}`;
+}
+
 
 // ==========================================
 // EXPORTS
@@ -695,6 +734,7 @@ export {
   torneoLabel,
   updateTableContext,
   renderStandingsAndCrosses,
+  goToTournamentPage,
   renderAnnualAndAverages,
   renderAll
 };

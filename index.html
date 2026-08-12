@@ -10,6 +10,14 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- BOTÓN MOBILE PARA ABRIR COMPETENCIAS -->
+<button class="mobile-menu-btn" id="mobile-menu-btn" type="button" aria-label="Abrir competencias">
+  <span class="mobile-menu-icon">☰</span>
+  <span>COMPETENCIAS</span>
+</button>
+
+<!-- OVERLAY -->
+<div class="mobile-drawer-overlay" id="mobile-drawer-overlay"></div>
     <header class="topbar">
       <div class="brand-wrap">
         <p class="brand-kicker">Fútbol en vivo</p>
@@ -123,20 +131,252 @@ main.layout {
   padding: 4px 6px;
 }
 
-/* Ajustes responsivos */
+/* =========================================================
+   MOBILE — DRAWER DE COMPETENCIAS
+   ========================================================= */
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.mobile-drawer-overlay {
+  display: none;
+}
+
+/* =========================================================
+   MOBILE — DRAWER DE COMPETENCIAS
+   ========================================================= */
+
+.mobile-menu-btn {
+  display: none;
+}
+
+.mobile-drawer-overlay {
+  display: none;
+}
+/* =========================================================
+   BOTÓN CERRAR DRAWER MOBILE
+   ========================================================= */
+
+.mobile-drawer-close {
+  display: none;
+}
+
 @media (max-width: 900px) {
+
+  /* =====================================================
+     BOTÓN COMPETENCIAS
+     ===================================================== */
+
+  .mobile-menu-btn {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    width: calc(100% - 20px);
+    min-height: 44px;
+
+    margin: 10px auto;
+    padding: 8px 14px;
+
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 8px;
+
+    background: #151519;
+    color: #fff;
+
+    font-family: 'Teko', sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    position: sticky;
+    top: 8px;
+    z-index: 900;
+  }
+
+
+  /* =====================================================
+     DRAWER
+     ===================================================== */
+
+  .panel-controls {
+    position: fixed !important;
+
+    top: 0 !important;
+    left: 0 !important;
+
+    width: min(320px, 88vw) !important;
+    max-width: min(320px, 88vw) !important;
+
+    height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 58px 16px 16px !important;
+
+    box-sizing: border-box;
+
+    z-index: 1001 !important;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    background: var(--panel, #151519);
+
+    border-right: 1px solid rgba(255,255,255,.10);
+    border-radius: 0 !important;
+
+    /* CERRADO POR DEFECTO */
+    transform: translateX(-105%) !important;
+
+    transition: transform .25s ease !important;
+  }
+
+
+  /* =====================================================
+     DRAWER ABIERTO
+     ===================================================== */
+
+  .panel-controls.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+
+  /* =====================================================
+     X
+     ===================================================== */
+
+  .mobile-drawer-close {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    position: absolute;
+
+    top: 12px;
+    right: 12px;
+
+    width: 36px;
+    height: 36px;
+
+    padding: 0;
+
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 8px;
+
+    background: rgba(255,255,255,.06);
+    color: #fff;
+
+    font-family: Arial, sans-serif;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+
+    cursor: pointer;
+
+    z-index: 1002 !important;
+
+    transition:
+      background .2s ease,
+      transform .2s ease;
+  }
+
+  .mobile-drawer-close:hover {
+    background: rgba(255,255,255,.12);
+    transform: scale(1.05);
+  }
+
+  .mobile-drawer-close:active {
+    transform: scale(.95);
+  }
+
+
+  /* =====================================================
+     OVERLAY
+     ===================================================== */
+
+  .mobile-drawer-overlay {
+    position: fixed !important;
+
+    inset: 0 !important;
+
+    z-index: 1000 !important;
+
+    display: block;
+
+    background: rgba(0,0,0,.58);
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+      opacity .25s ease,
+      visibility .25s ease;
+  }
+
+  .mobile-drawer-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+
+  /* =====================================================
+     BODY
+     ===================================================== */
+
+  body.drawer-open {
+    overflow: hidden;
+  }
+
+
+  /* =====================================================
+     LAYOUT MOBILE
+     ===================================================== */
+
   main.layout {
-    grid-template-columns: 1fr !important;
+    display: block !important;
+
+    width: 100%;
+    max-width: 100%;
+
+    padding: 0 10px 20px;
+
+    box-sizing: border-box;
   }
-  .panel-controls, .panel-matches, .panel-table {
-    grid-column: auto !important;
-    max-width: 100% !important;
+
+  .panel-matches {
+    display: block;
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
   }
+
+  .panel-table {
+    display: none;
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
+  }
+
 }
 </style>
 <main class="layout">
   <!-- SIDEBAR IZQUIERDA (COMPETENCIAS Y BÚSQUEDA) -->
   <aside class="panel panel-controls reveal">
+<button
+  id="mobile-drawer-close"
+  class="mobile-drawer-close"
+  type="button"
+  aria-label="Cerrar competencias"
+>
+  ×
+</button>
     <div class="section-title-wrap">
       <h2 class="section-title">Competencias</h2>
     </div>
@@ -429,5 +669,6 @@ main.layout {
     </div>
 
     <script type="module" src="js/main.js"></script>
+
   </body>
 </html>

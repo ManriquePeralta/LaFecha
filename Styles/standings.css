@@ -1,0 +1,427 @@
+/* ==========================================================================
+   TABLAS DE POSICIONES
+   ========================================================================== */
+
+.standings-sections {
+    display: flex;
+    flex-direction: column;
+
+    gap: 1rem;
+}
+
+.zone-block {
+    padding: 0;
+
+    background: transparent;
+
+    border: none;
+    border-radius: 0;
+}
+
+.sub-title {
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.35rem;
+
+    color: var(--ink-soft);
+
+    border-bottom: 1px solid var(--rule);
+
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    text-transform: uppercase;
+}
+
+.table-wrap {
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+
+    scrollbar-color:
+        var(--rule-strong)
+        transparent;
+}
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    min-width: 20rem;
+
+    font-family: var(--font-mono);
+}
+
+th,
+td {
+    padding: 0.34rem 0.4rem;
+
+    text-align: left;
+
+    border-bottom: 1px solid var(--rule);
+
+    font-size: 0.82rem;
+}
+
+th {
+    color: var(--ink-faint);
+
+    font-size: 0.62rem;
+    font-weight: 700;
+
+    letter-spacing: 0.07em;
+
+    text-transform: uppercase;
+}
+
+th:nth-child(1),
+td:nth-child(1) {
+    width: 8%;
+
+    color: var(--ink-faint);
+}
+
+th:nth-child(2),
+td:nth-child(2) {
+    width: 54%;
+
+    font-family: var(--font-body);
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+    width: 12%;
+}
+
+tbody tr {
+    position: relative;
+
+    transition:
+        background 0.15s ease;
+}
+
+tbody tr:hover {
+    background: var(--paper-dim);
+}
+
+tbody tr::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+    bottom: 0;
+
+    width: 0;
+
+    background: var(--ink);
+
+    opacity: 0.5;
+
+    transition:
+        width 0.15s ease;
+}
+
+tbody tr:hover::before {
+    width: 3px;
+}
+
+.cell-pts {
+    color: var(--ink);
+
+    font-weight: 700;
+}
+
+tr.playoff td:first-child {
+    color: var(--ink);
+
+    font-weight: 700;
+}
+
+tr.playoff {
+    box-shadow:
+        inset 3px 0 0 var(--sky);
+}
+
+tr.row-leader {
+    box-shadow:
+        inset 3px 0 0 var(--pitch);
+}
+
+tr.row-libertadores {
+    box-shadow:
+        inset 3px 0 0 var(--orange);
+}
+
+tr.row-sudamericana {
+    box-shadow:
+        inset 3px 0 0 var(--sky);
+}
+
+tr.row-descenso {
+    box-shadow:
+        inset 3px 0 0 var(--red);
+}
+
+
+/* ==========================================================================
+   COPAS / GRUPOS
+   ========================================================================== */
+
+.panel-table.cup-mode .standings-sections {
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(260px, 1fr)
+        );
+
+    gap: 0.85rem;
+}
+
+.cup-group-card {
+    padding: 0.75rem;
+
+    background: var(--paper-raised);
+
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}
+
+.cup-group-card .group-title {
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.15rem;
+
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+
+    letter-spacing: 0.04em;
+
+    text-transform: uppercase;
+
+    border-bottom:
+        2px solid var(--pitch);
+}
+
+.team-cell {
+    display: flex;
+    align-items: center;
+
+    gap: 0.4rem;
+
+    text-align: left;
+
+    font-family: var(--font-body);
+    font-weight: 600;
+}
+
+
+/* ==========================================================================
+   PLAYOFFS / ANUAL / PROMEDIOS
+   ========================================================================== */
+
+.playoff-box {
+    margin-top: 0.9rem;
+    padding: 0.75rem 0 0;
+
+    background: transparent;
+
+    border: none;
+    border-top: 2px solid var(--ink);
+    border-radius: 0;
+}
+
+.playoff-list {
+    display: grid;
+
+    gap: 0.5rem;
+}
+
+.cross-card {
+    padding: 0.5rem 0.6rem;
+
+    background: var(--paper-raised);
+
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.cross-card:hover {
+    transform: translateY(-2px);
+
+    border-color: var(--ink-soft);
+
+    box-shadow: var(--shadow-card);
+}
+
+.cross-card .teams {
+    font-size: 0.88rem;
+}
+
+.cross-card .meta {
+    margin-top: 0.2rem;
+}
+
+
+/* ==========================================================================
+   CONTROLES DE TABLA
+   ========================================================================== */
+
+.table-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.85rem;
+
+    margin-bottom: 0.6rem;
+}
+
+.table-controls .search-wrap {
+    flex: 0 0 auto;
+
+    min-width: 0;
+}
+
+#season-select {
+    padding: 0.5rem 0.65rem;
+
+    border: 1.5px solid var(--rule-strong);
+    border-radius: var(--radius);
+
+    background: var(--paper-raised);
+    color: var(--ink);
+
+    font: inherit;
+    font-family: var(--font-body);
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.15s ease,
+        transform 0.1s ease;
+}
+
+#season-select:hover {
+    border-color: var(--ink);
+}
+
+#season-select:active {
+    transform: scale(0.98);
+}
+
+#season-select:focus-visible {
+    border-color: var(--ink);
+
+    outline: none;
+}
+
+.table-context {
+    margin: 0 0 0.75rem;
+
+    color: var(--ink-soft);
+
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+
+    letter-spacing: 0.04em;
+
+    text-transform: uppercase;
+}
+
+.box-note {
+    margin: -0.25rem 0 0.6rem;
+
+    color: var(--ink-soft);
+
+    font-size: 0.78rem;
+
+    font-style: italic;
+}
+
+
+/* ==========================================================================
+   LEYENDA
+   ========================================================================== */
+
+.legend {
+    margin-top: 0.85rem;
+    padding-top: 0.7rem;
+
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 0.5rem 1rem;
+
+    border-top: 1px solid var(--rule);
+}
+
+.legend-item {
+    position: relative;
+
+    padding-left: 0.85rem;
+
+    color: var(--ink-soft);
+
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+
+    letter-spacing: 0.03em;
+
+    text-transform: uppercase;
+
+    transition:
+        color 0.15s ease;
+}
+
+.legend-item::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 0.15rem;
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 2px;
+
+    transition:
+        transform 0.15s ease;
+}
+
+.legend-item:hover {
+    color: var(--ink);
+}
+
+.legend-item:hover::before {
+    transform: scale(1.35);
+}
+
+.legend-item.leader::before {
+    background: var(--pitch);
+}
+
+.legend-item.libertadores::before {
+    background: var(--orange);
+}
+
+.legend-item.sudamericana::before {
+    background: var(--sky);
+}
+
+.legend-item.descenso::before {
+    background: var(--red);
+}

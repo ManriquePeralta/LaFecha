@@ -1,0 +1,87 @@
+/* ==========================================================================
+   BASE / TOKENS
+   ========================================================================== */
+
+:root {
+    --paper: #69ac48;
+    --paper-raised: #e2e2e2;
+    --paper-dim: #e2dcc8;
+
+    --ink: #22201e;
+    --ink-soft: #0a0a0a;
+    --ink-faint: #080808;
+
+    --rule: #cfc6ab;
+    --rule-strong: #b7ac8c;
+
+    --red: #c31d1f;
+    --red-dim: #8f1517;
+
+    --pitch: #1f6b3a;
+    --orange: #c1631f;
+    --sky: #2f7fae;
+    --gold: #b3841a;
+
+    --font-display: "Teko", sans-serif;
+    --font-body: "Roboto Condensed", sans-serif;
+    --font-mono: "Space Mono", "Roboto Condensed", monospace;
+
+    --radius: 3px;
+
+    --shadow-card:
+        0 1px 0 var(--rule),
+        0 8px 18px -14px rgba(24, 20, 15, 0.35);
+
+    --shadow-raised:
+        0 18px 40px -20px rgba(24, 20, 15, 0.45);
+}
+
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    color: var(--ink);
+    font-family: var(--font-body);
+
+    background-color: var(--paper);
+
+    background-image:
+        radial-gradient(
+            rgba(24, 20, 15, 0.07) 0.6px,
+            transparent 0.6px
+        );
+
+    background-size: 10px 10px;
+}
+
+::selection {
+    background: var(--ink);
+    color: var(--paper-raised);
+}
+
+:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+    font-family: var(--font-display);
+}

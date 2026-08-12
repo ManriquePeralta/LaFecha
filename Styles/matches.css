@@ -1,0 +1,377 @@
+/* ==========================================================================
+   LISTA DE PARTIDOS
+   ========================================================================== */
+
+.matches-list {
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.4rem;
+}
+
+
+/* ==========================================================================
+   DATELINE POR DÍA
+   ========================================================================== */
+
+.day-divider {
+    margin: 0.85rem 0 0.4rem;
+    padding-bottom: 0.28rem;
+
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+
+    gap: 0.5rem;
+
+    border-bottom: 2px solid var(--ink);
+}
+
+.day-divider:first-child {
+    margin-top: 0;
+}
+
+.day-label {
+    color: var(--ink);
+
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+
+    letter-spacing: 0.015em;
+    line-height: 1;
+
+    text-transform: uppercase;
+}
+
+.day-count {
+    color: var(--ink-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+
+    letter-spacing: 0.04em;
+
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   TARJETA DE PARTIDO
+   ========================================================================== */
+
+.match-card {
+    position: relative;
+
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.35rem;
+
+    padding: 0.75rem 0.9rem;
+
+    background: var(--paper-raised);
+
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}
+
+.match-card.clickable {
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.match-card.clickable:hover,
+.match-card.clickable:focus-visible {
+    background: var(--paper-dim);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 16px -12px
+        rgba(24, 20, 15, 0.5);
+}
+
+.match-card.clickable::after {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: -30%;
+
+    width: 30%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            115deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent
+        );
+
+    transform: skewX(-12deg);
+
+    transition: left 0.55s ease;
+
+    pointer-events: none;
+}
+
+.match-card.clickable:hover::after,
+.match-card.clickable:focus-visible::after {
+    left: 130%;
+}
+
+.match-card.live {
+    background:
+        color-mix(
+            in srgb,
+            var(--red) 6%,
+            var(--paper-raised)
+        );
+
+    border-color:
+        color-mix(
+            in srgb,
+            var(--red) 35%,
+            var(--rule)
+        );
+}
+
+
+/* ==========================================================================
+   FILA PRINCIPAL
+   ========================================================================== */
+
+.match-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 0.8rem;
+}
+
+.team-info {
+    display: flex;
+    align-items: center;
+
+    gap: 0.45rem;
+
+    flex: 1;
+
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.team-info.away {
+    justify-content: flex-end;
+}
+
+.match-score {
+    padding: 0 0.4rem;
+
+    color: var(--ink);
+
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+
+    line-height: 1;
+    letter-spacing: 0.05em;
+}
+
+
+/* ==========================================================================
+   EQUIPOS / ESCUDOS
+   ========================================================================== */
+
+.teams,
+.meta {
+    margin: 0;
+}
+
+.teams-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.45rem;
+}
+
+.team-with-logo {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.32rem;
+}
+
+.team-logo {
+    width: 21px;
+    height: 21px;
+
+    flex: 0 0 auto;
+
+    object-fit: cover;
+
+    background: var(--paper-raised);
+
+    border: 1px solid var(--rule-strong);
+    border-radius: 50%;
+
+    transition:
+        transform 0.2s ease;
+}
+
+.match-card.clickable:hover .team-logo {
+    transform: scale(1.12);
+}
+
+.teams strong {
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.vs {
+    color: var(--ink-faint);
+
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+
+    text-transform: uppercase;
+}
+
+
+/* ==========================================================================
+   GOLEADORES
+   ========================================================================== */
+
+.match-scorers-preview {
+    padding-top: 0.35rem;
+
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    gap: 0.5rem;
+
+    color: var(--ink-soft);
+
+    border-top: 1px dotted var(--rule-strong);
+
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+}
+
+.scorer-item {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.25rem;
+}
+
+
+/* ==========================================================================
+   META / ESTADOS
+   ========================================================================== */
+
+.meta {
+    margin-top: 0.28rem;
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 0.4rem;
+
+    color: var(--ink-soft);
+
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 0.3rem;
+
+    color: var(--ink-soft);
+
+    font-size: 0.66rem;
+
+    letter-spacing: 0.06em;
+
+    text-transform: uppercase;
+}
+
+.status::before {
+    content: "";
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: var(--ink-faint);
+}
+
+.badge-final::before {
+    background: var(--ink-soft);
+}
+
+.badge-scheduled::before {
+    background: var(--sky);
+}
+
+.badge-live {
+    color: var(--red);
+
+    font-weight: 700;
+}
+
+.badge-live::before {
+    background: var(--red);
+
+    animation:
+        dotPulse
+        1.2s
+        ease-in-out
+        infinite;
+}
+
+.detail {
+    color: var(--ink-faint);
+}
+
+
+/* ==========================================================================
+   ESTADOS VACÍOS
+   ========================================================================== */
+
+.empty {
+    margin: 0;
+    padding: 0.95rem;
+
+    color: var(--ink-soft);
+
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--radius);
+
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+
+.empty-inline {
+    color: var(--ink-soft);
+
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}

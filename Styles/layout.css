@@ -1,0 +1,167 @@
+/* ==========================================================================
+   LAYOUT PRINCIPAL
+   ========================================================================== */
+
+.layout {
+    max-width: 1400px;
+    margin: 0 auto;
+
+    padding: 1.1rem;
+
+    display: grid;
+
+    grid-template-columns:
+        240px
+        minmax(0, 1.8fr)
+        330px;
+
+    gap: 1.25rem;
+
+    align-items: start;
+}
+
+
+/* ==========================================================================
+   PANELES
+   ========================================================================== */
+
+.panel {
+    padding: 1rem 1.05rem 1.15rem;
+
+    background:
+        color-mix(
+            in srgb,
+            var(--paper-raised) 82%,
+            transparent
+        );
+
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow-card);
+
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+
+    transition:
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+.panel:hover {
+    box-shadow:
+        0 2px 0 var(--rule),
+        0 14px 30px -16px rgba(24, 20, 15, 0.45);
+}
+
+.panel-controls {
+    grid-column: span 1;
+}
+
+.panel-matches {
+    grid-column: span 1;
+}
+
+.panel-table {
+    grid-column: span 1;
+
+    position: sticky;
+    top: 1rem;
+}
+
+
+/* ==========================================================================
+   TÍTULOS DE SECCIÓN
+   ========================================================================== */
+
+.section-title-wrap {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+
+    border-bottom: 2px solid var(--ink);
+}
+
+.section-title {
+    font-size: 1.7rem;
+
+    letter-spacing: 0.01em;
+
+    text-transform: uppercase;
+}
+
+
+/* ==========================================================================
+   REVEAL
+   ========================================================================== */
+
+.reveal {
+    animation:
+        riseIn
+        0.5s
+        cubic-bezier(0.2, 0.7, 0.3, 1)
+        both;
+}
+
+.panel-matches.reveal {
+    animation-delay: 0.06s;
+}
+
+.panel-table.reveal {
+    animation-delay: 0.12s;
+}
+
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+
+/* ==========================================================================
+   BOLETÍN EN VIVO
+   ========================================================================== */
+
+.live-banner {
+    margin: 0 0 0.85rem;
+
+    padding: 0.5rem 0.7rem;
+
+    display: flex;
+    align-items: center;
+
+    gap: 0.5rem;
+
+    background: var(--ink);
+    color: var(--paper-raised);
+
+    border-radius: var(--radius);
+
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.03em;
+}
+
+.live-banner::before {
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    flex: 0 0 auto;
+
+    border-radius: 50%;
+
+    background: var(--red);
+
+    animation: dotPulse 1.4s ease-in-out infinite;
+}

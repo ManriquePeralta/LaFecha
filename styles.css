@@ -31,6 +31,13 @@
   necesita transparencia, se deriva con color-mix() de la MISMA variable
   (no se inventa ningun color nuevo) — ver lista de 18 mejoras al final
   de la respuesta.
+
+  NOTA DE ESTA REVISION: el bloque "Acordeon de Competencias" que llego
+  agregado al final rompia esa misma regla (colores sueltos, radio suelto,
+  tipografia hardcodeada, un token --panel-bg que no existe en :root). Se
+  corrigio con el mismo criterio que el resto de esta pasada: derivar de
+  una variable existente via color-mix(), no inventar. Tambien se sumo
+  .detail-back aca (antes vivia duplicado en detail.html y team.html).
 */
 
 :root {
@@ -141,8 +148,6 @@ h1, h2, h3, h4 {
   transition: letter-spacing 0.3s ease;
 }
 
-/* Mejora 1: el titulo "respira" un toque de tracking al pasar el mouse
-   por el mastil entero, sin tocar tipografia ni color. */
 .topbar:hover .brand-title {
   letter-spacing: 0.03em;
 }
@@ -158,18 +163,12 @@ h1, h2, h3, h4 {
 .date-pill {
   margin: 0;
   text-transform: capitalize;
+  padding: 0.4rem 0.7rem;
   font-family: var(--font-mono);
   font-size: 0.76rem;
   color: var(--ink-soft);
   letter-spacing: 0.01em;
-  padding: 0.4rem 0;
   transition: color 0.2s ease;
-}
-
-/* Mejora 2: pastilla de fecha en vidrio esmerilado (glassmorphism real,
-   transparencia derivada de --paper-raised con color-mix). */
-.date-pill {
-  padding: 0.4rem 0.7rem;
   background: color-mix(in srgb, var(--paper-raised) 55%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -196,13 +195,10 @@ h1, h2, h3, h4 {
 .refresh-btn:hover {
   background: var(--ink);
   color: var(--paper-raised);
-  /* Mejora 3: elevacion + sombra al pasar el mouse (antes era un cambio
-     de color seco, sin ninguna sensacion de profundidad). */
   transform: translateY(-2px);
   box-shadow: var(--shadow-raised);
 }
 
-/* Mejora 4: el boton "cede" al click, como un boton fisico. */
 .refresh-btn:active {
   transform: translateY(0);
   box-shadow: none;
@@ -215,8 +211,6 @@ h1, h2, h3, h4 {
   color: var(--ink);
   transform: none;
   box-shadow: none;
-  /* Mejora 5: mientras dice "Actualizando...", un pulso suave en vez de
-     quedar inerte — comunica "esto esta vivo" sin texto adicional. */
   animation: softPulse 1.4s ease-in-out infinite;
 }
 
@@ -224,6 +218,35 @@ h1, h2, h3, h4 {
   .refresh-btn:disabled {
     animation: none;
   }
+}
+
+/* ---------- Boton "volver" (paginas de detalle) ---------- */
+
+.detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.82rem;
+  background: transparent;
+  transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-back::before {
+  content: "←";
+}
+
+.detail-back:hover {
+  background: var(--ink);
+  color: var(--paper-raised);
 }
 
 /* ---------- Layout general ---------- */
@@ -239,9 +262,6 @@ h1, h2, h3, h4 {
 }
 
 .panel {
-  /* Mejora 6: panel de vidrio esmerilado — transparencia derivada de
-     --paper-raised con color-mix (mismo color, distinta opacidad) +
-     blur real detras. */
   background: color-mix(in srgb, var(--paper-raised) 82%, transparent);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
@@ -252,8 +272,6 @@ h1, h2, h3, h4 {
   transition: box-shadow 0.25s ease;
 }
 
-/* Mejora 7: el panel entero profundiza su sombra si el mouse esta en
-   cualquier parte de el, dandole una sensacion sutil de "estar mas cerca". */
 .panel:hover {
   box-shadow: 0 2px 0 var(--rule), 0 14px 30px -16px rgba(24, 20, 15, 0.45);
 }
@@ -375,8 +393,6 @@ h1, h2, h3, h4 {
 .segment-btn:hover {
   border-color: var(--ink);
   color: var(--ink);
-  /* Mejora 8: mismo tratamiento de elevacion que el boton actualizar, para
-     que toda la pagina "responda" de forma consistente al hover. */
   transform: translateY(-1px);
   box-shadow: 0 6px 14px -10px rgba(24, 20, 15, 0.5);
 }
@@ -391,9 +407,6 @@ h1, h2, h3, h4 {
   overflow: hidden;
 }
 
-/* Mejora 9: brillo diagonal que atraviesa la pestana activa una sola vez
-   cuando se activa (glassmorphism aplicado como micro-interaccion, no
-   solo como fondo estatico). */
 .segment-btn.active::before,
 .segment-btn[aria-selected="true"]::before {
   content: "";
@@ -490,7 +503,6 @@ h1, h2, h3, h4 {
 .search-wrap input:focus {
   border-color: var(--ink);
   outline: none;
-  /* Mejora 10: anillo de foco suave animado en vez de un salto brusco. */
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
@@ -512,7 +524,6 @@ h1, h2, h3, h4 {
   transition: transform 0.15s ease;
 }
 
-/* Mejora 11: el check "salta" apenas al tildarse. */
 .toggle-wrap input:checked {
   transform: scale(1.15);
 }
@@ -582,15 +593,10 @@ h1, h2, h3, h4 {
 .match-card.clickable:focus-visible {
   background: var(--paper-dim);
   padding-left: 0.5rem;
-  /* Mejora 12: antes "transform: none" mataba cualquier elevacion — ahora
-     la tarjeta se levanta un poco y proyecta sombra, como una ficha que
-     se despega del papel. */
   transform: translateY(-1px);
   box-shadow: 0 6px 16px -12px rgba(24, 20, 15, 0.5);
 }
 
-/* Mejora 13: brillo tipo vidrio que barre la tarjeta al pasar el mouse
-   (glassmorphism como micro-interaccion, no solo fondo translucido). */
 .match-card.clickable::after {
   content: "";
   position: absolute;
@@ -649,8 +655,6 @@ h1, h2, h3, h4 {
   transition: transform 0.2s ease;
 }
 
-/* Mejora 14: los escudos crecen apenas al pasar el mouse por la tarjeta
-   (detalle chico, pero le da vida a algo que hoy es completamente estatico). */
 .match-card.clickable:hover .team-logo {
   transform: scale(1.12);
 }
@@ -754,8 +758,6 @@ h1, h2, h3, h4 {
   overflow-x: auto;
 }
 
-/* Mejora 15: scrollbar fina y prolija en vez de la barra generica del
-   sistema operativo, cuando la tabla se desborda en mobile. */
 .table-wrap::-webkit-scrollbar,
 .modal-box::-webkit-scrollbar {
   height: 6px;
@@ -828,9 +830,6 @@ tbody tr:hover {
   background: var(--paper-dim);
 }
 
-/* Mejora 16: al pasar el mouse por una fila, ademas del fondo, aparece
-   una tenue franja lateral izquierda que crece desde 0 — le da a la fila
-   una sensacion de "engancharse" en vez de solo cambiar de color. */
 tbody tr::before {
   content: "";
   position: absolute;
@@ -896,8 +895,6 @@ tr.row-descenso {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-/* Mejora 17: los cruces de playoff tambien elevan al pasar el mouse
-   (antes eran el unico bloque interactivo de la pagina sin ningun hover). */
 .cross-card:hover {
   transform: translateY(-2px);
   border-color: var(--ink-soft);
@@ -957,9 +954,6 @@ tr.row-descenso {
   transition: transform 0.15s ease;
 }
 
-/* Mejora 18: el punto de color de la leyenda "salta" y el texto se
-   oscurece al pasar el mouse, para que la leyenda se sienta interactiva
-   aunque no dispare ninguna accion. */
 .legend-item:hover {
   color: var(--ink);
 }
@@ -1087,7 +1081,6 @@ tr.row-descenso {
   border-color: var(--ink);
 }
 
-/* Mejora 19: leve "click" visual al abrir el selector. */
 #season-select:active {
   transform: scale(0.98);
 }
@@ -1120,8 +1113,6 @@ tr.row-descenso {
   inset: 0;
   z-index: 1000;
   background: rgba(24, 20, 15, 0.55);
-  /* Mejora 20: blur del fondo detras del modal — glassmorphism aplicado
-     al overlay, no solo a las tarjetas. */
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   display: flex;
@@ -1141,8 +1132,6 @@ tr.row-descenso {
 }
 
 .modal-box {
-  /* Mejora 21: la caja del modal tambien es vidrio esmerilado, con blur
-     de verdad detras (se nota especialmente con el overlay difuminado). */
   background: color-mix(in srgb, var(--paper-raised) 88%, transparent);
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
@@ -1156,7 +1145,6 @@ tr.row-descenso {
   padding: 1.4rem;
   position: relative;
   box-shadow: var(--shadow-raised);
-  /* Mejora 22: entrada con pop sutil en vez de aparecer de golpe. */
   animation: modalPop 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
@@ -1195,8 +1183,6 @@ tr.row-descenso {
 
 .modal-close:hover {
   background: var(--paper-dim);
-  /* Mejora 23: la cruz gira al pasar el mouse, un guino chico de que es
-     un boton de cerrar, no solo un simbolo estatico. */
   transform: rotate(90deg);
 }
 
@@ -1265,9 +1251,6 @@ tr.row-descenso {
   transition: background 0.15s ease, padding-left 0.15s ease;
 }
 
-/* Mejora 24: cada evento del partido (gol/tarjeta) resalta al pasar el
-   mouse, igual que las tarjetas de partido, para que el modal se sienta
-   parte de la misma pagina y no una superposicion aparte. */
 .detail-list li:hover {
   background: var(--paper-dim);
   padding-left: 0.4rem;
@@ -1306,7 +1289,13 @@ body.modal-open {
   }
 }
 
-/* Acordeón de Competencias */
+/* ---------- Acordeon de competencias ----------
+   Corregido para depender de los tokens reales: el verde/hover/radio/
+   tipografia sueltos que llegaron aca se reemplazaron por var(--pitch),
+   var(--radius), var(--font-display), etc. El hover oscuro se deriva del
+   mismo verde con color-mix() en vez de un segundo hex inventado aparte,
+   siguiendo el mismo criterio que el resto de esta pasada. */
+
 .league-accordion {
   display: flex;
   flex-direction: column;
@@ -1315,10 +1304,10 @@ body.modal-open {
 }
 
 .accordion-item {
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
   overflow: hidden;
-  background: var(--panel-bg, #d8e2cf);
+  background: var(--paper-dim);
 }
 
 .accordion-header {
@@ -1327,17 +1316,18 @@ body.modal-open {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.75rem;
-  background: #19622b;
-  color: #ffffff;
+  background: var(--pitch);
+  color: var(--paper-raised);
   border: none;
-  font-family: 'Teko', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.2rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .accordion-header:hover {
-  background: #134d22;
+  background: color-mix(in srgb, var(--pitch) 80%, black);
 }
 
 .country-info {
@@ -1367,7 +1357,7 @@ body.modal-open {
   padding: 0.4rem;
   flex-direction: column;
   gap: 0.3rem;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(24, 20, 15, 0.04);
 }
 
 .accordion-item.active .accordion-content {

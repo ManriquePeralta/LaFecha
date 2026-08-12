@@ -16,6 +16,10 @@ function matchCardHtml(m, view) {
   const gl = m.gl ?? m.homeScore ?? "-";
   const gv = m.gv ?? m.awayScore ?? "-";
 
+  // Resolver Categoría y Liga para la navegación
+  const matchCategory = m.category || (state.isEspnLeague ? "espn" : state.category) || "primera";
+  const matchLeague = m.league || m.leagueCode || (state.isEspnLeague ? state.espnLeagueCode : "") || "";
+
   const isLive =
     m.isLive ||
     m.estado === "En juego" ||
@@ -77,7 +81,12 @@ function matchCardHtml(m, view) {
         aria-label="Ver detalle del partido"
       >
         <p class="teams teams-line">
-          <span class="team-with-logo">
+          <span 
+            class="team-with-logo" 
+            data-team-name="${localName}"
+            data-category="${matchCategory}"
+            data-league="${matchLeague}"
+          >
             <img
               class="team-logo"
               src="${localLogo}"
@@ -88,7 +97,12 @@ function matchCardHtml(m, view) {
 
           <span class="vs">vs</span>
 
-          <span class="team-with-logo">
+          <span 
+            class="team-with-logo" 
+            data-team-name="${visitanteName}"
+            data-category="${matchCategory}"
+            data-league="${matchLeague}"
+          >
             <img
               class="team-logo"
               src="${visitanteLogo}"
@@ -124,7 +138,12 @@ function matchCardHtml(m, view) {
       aria-label="Ver detalle del partido"
     >
       <p class="teams teams-line">
-        <span class="team-with-logo">
+        <span 
+          class="team-with-logo" 
+          data-team-name="${localName}"
+          data-category="${matchCategory}"
+          data-league="${matchLeague}"
+        >
           <img
             class="team-logo"
             src="${localLogo}"
@@ -135,7 +154,12 @@ function matchCardHtml(m, view) {
 
         <span class="vs">vs</span>
 
-        <span class="team-with-logo">
+        <span 
+          class="team-with-logo" 
+          data-team-name="${visitanteName}"
+          data-category="${matchCategory}"
+          data-league="${matchLeague}"
+        >
           <img
             class="team-logo"
             src="${visitanteLogo}"

@@ -8,20 +8,76 @@ import { renderMatches } from "./render-matches.js";
 import { loadCategoryData, loadCache, setLiveBanner, setDate } from "./data-loader.js";
 import { openMatchDetail, closeMatchDetail, initDetailPage } from "./match-detail.js";
 
-// Helper para navegar a la ficha del equipo
+// Helper para ir a la ficha del equipo
 function goToTeamPage(teamName) {
   if (!teamName) return;
+
   const params = new URLSearchParams({
     team: teamName.trim(),
-    category: state.category,
-    season: String(state.season)
+    category: state.isEspnLeague ? "espn" : state.category,
+    league: state.isEspnLeague ? (state.espnLeagueCode || "") : "",
+    season: String(state.season || 2026),
+    torneo: state.torneo || "clausura"
   });
+
   window.location.href = `team.html?${params.toString()}`;
 }
 
-// ==========================================
-// CARGA DE COMPETENCIAS VÍA ESPN (Copa Arg, LATAM, Europa)
-// ==========================================
+// Sincronizar URL del navegador
+function updateUrlParams() {
+  const params = new URLSearchParams();
+
+  const category = state.isEspnLeague ? "espn" : state.category;
+  const leagueCode = state.isEspnLeague ? state.espnLeagueCode : "";
+
+  params.set("category", category || "primera");
+  if (leagueCode) params.set("league", leagueCode);
+  if (state.season) params.set("season", String(state.season));
+  if (state.torneo) params.set("torneo", state.torneo);
+
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  window.history.replaceState(null, "", newUrl);
+}
+
+// Restaurar Estado desde la URL (para cuando volvés de detail.html)
+function restoreStateFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const category = urlParams.get("category");
+  const league = urlParams.get("league");
+  const season = urlParams.get("season");
+  const torneo = urlParams.get("torneo");
+
+  if (season) state.season = Number(season);
+  if (torneo) state.torneo = torneo;
+
+  if (category) {
+    if (category === "espn" && league) {
+      state.isEspnLeague = true;
+      state.espnLeagueCode = league;
+
+      const btn = document.querySelector(`[data-category="espn"][data-league="${league}"]`);
+      if (btn) {
+        document.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const accordionItem = btn.closest(".accordion-item");
+        if (accordionItem) accordionItem.classList.add("active");
+      }
+      return true; // Era liga de ESPN
+    } else {
+      state.isEspnLeague = false;
+      state.category = category;
+
+      const btn = document.querySelector(`[data-category="${category}"]`);
+      if (btn) {
+        document.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+    }
+  }
+  return false;
+}
+
+// Carga de ligas ESPN
 async function loadEspnLeagueData(leagueCode) {
   if (!matchesList) return;
 
@@ -39,7 +95,6 @@ async function loadEspnLeagueData(leagueCode) {
     const matchesData = await matchesRes.json();
     const standingsData = await standingsRes.json();
 
-    // 1. Asignamos los partidosLimpios al estado de partidos actual
     state.currentMatches = (matchesData.events || []).map((e) => {
       const comp = e.competitions?.[0];
       const home = comp?.competitors?.find((c) => c.homeAway === "home") || comp?.competitors?.[0];
@@ -62,7 +117,6 @@ async function loadEspnLeagueData(leagueCode) {
       };
     });
 
-    // 2. Asignamos las posiciones al estado actual
     const standingsGroup = standingsData.children?.[0]?.standings || standingsData.standings?.[0] || [];
     const entries = standingsGroup.entries || [];
 
@@ -90,7 +144,6 @@ async function loadEspnLeagueData(leagueCode) {
       ]
     };
 
-    // 3. Renderizamos ambas vistas
     renderMatches();
     renderAll();
   } catch (err) {
@@ -103,18 +156,16 @@ async function loadEspnLeagueData(leagueCode) {
   }
 }
 
-// ==========================================
-// AUTO-REFRESH EN SEGUNDO PLANO
-// ==========================================
+// Auto Refresh
 const AUTO_REFRESH_MS = 30000;
 let autoRefreshTimer = null;
 
 function triggerAutoRefresh() {
   if (document.hidden) return;
-
   if (state.isEspnLeague && state.espnLeagueCode) {
     loadEspnLeagueData(state.espnLeagueCode);
   } else {
+    state.isEspnLeague = false;
     loadCategoryData(state.category, true);
   }
 }
@@ -131,61 +182,77 @@ function stopAutoRefresh() {
   }
 }
 
+// Helper local para abrir el detalle capturando la categoría/liga de la tarjeta
+function handleOpenMatchDetail(matchId, cardElement) {
+  if (!matchId) return;
+
+  let category = "primera";
+  let league = "";
+
+  // 1. Intentar leer data-category / data-league de la tarjeta clickeada
+  if (cardElement) {
+    const teamWithData = cardElement.querySelector("[data-category]");
+    if (teamWithData) {
+      category = teamWithData.dataset.category || category;
+      league = teamWithData.dataset.league || league;
+    }
+  }
+
+  // 2. Fallback al estado global si no los traía el HTML
+  if (category === "primera" && state.isEspnLeague) {
+    category = "espn";
+    league = state.espnLeagueCode || "";
+  }
+
+  const params = new URLSearchParams({
+    matchId: String(matchId),
+    category: category,
+    league: league,
+    season: String(state.season || 2026),
+    torneo: state.torneo || "clausura"
+  });
+
+  window.location.href = `detail.html?${params.toString()}`;
+}
+
+// =========================================================
+// INICIALIZACIÓN DE LA APLICACIÓN
+// =========================================================
+
 if (!isDetailPage) {
-  // Manejador del Acordeón Desplegable por Países
+  // Manejador del Acordeón Desplegable
   document.querySelectorAll(".accordion-header").forEach((header) => {
     header.addEventListener("click", () => {
       const item = header.closest(".accordion-item");
       const isActive = item.classList.contains("active");
-
       document.querySelectorAll(".accordion-item").forEach((i) => i.classList.remove("active"));
-
-      if (!isActive) {
-        item.classList.add("active");
-      }
+      if (!isActive) item.classList.add("active");
     });
   });
 
-  // Manejador de Clic en Competencias (Botones dentro del acordeón)
-// Manejador de Clic en Competencias (Botones dentro del acordeón)
-// Escuchador de botones de categorías / ligas
-// Manejador de clic en competencias (AFA + ESPN)
+  // Manejador ÚNICO de selección de liga
   document.querySelectorAll("[data-category]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      // 1. Limpiar estado activo visual en todos los botones
-      document.querySelectorAll(".accordion-content .segment-btn, .segment-btn").forEach((b) => {
-        b.classList.remove("active");
-        b.setAttribute("aria-selected", "false");
-      });
-
+      document.querySelectorAll(".segment-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      btn.setAttribute("aria-selected", "true");
 
       const category = btn.dataset.category;
       const leagueCode = btn.dataset.league;
 
-      // 2. Rama Ligas ESPN (Internacional / Copa Argentina)
       if (category === "espn" && leagueCode) {
         state.isEspnLeague = true;
         state.espnLeagueCode = leagueCode;
+        updateUrlParams();
         loadEspnLeagueData(leagueCode);
-      } 
-      // 3. Rama Fútbol Argentino Nativo (Primera o Primera Nacional)
-      else {
+      } else {
         state.isEspnLeague = false;
         state.espnLeagueCode = null;
+        state.currentMatches = [];
         state.category = category;
 
-        // Resetear controles visuales de AFA y forzar carga
+        updateUrlParams();
         syncTorneoControls();
         syncLiveOnlyAvailability();
-        
-        // Poner estado de carga temporario
-        if (matchesList) {
-          matchesList.innerHTML = '<p class="detail-loading">Cargando partidos de Argentina...</p>';
-        }
-
-        // Cargar datos de AFA y forzar renderizado
         loadCategoryData(state.category, true);
       }
     });
@@ -196,6 +263,7 @@ if (!isDetailPage) {
       if (btn.disabled) return;
       state.torneo = btn.dataset.torneo;
       setActiveButtons("[data-torneo]", "torneo", state.torneo);
+      updateUrlParams();
       renderAll();
       if (!state.isEspnLeague) {
         loadCategoryData(state.category, true);
@@ -205,6 +273,7 @@ if (!isDetailPage) {
 
   seasonSelect.addEventListener("change", (e) => {
     state.season = Number(e.target.value);
+    updateUrlParams();
     syncTorneoControls();
     renderAll();
     if (!state.isEspnLeague) {
@@ -218,30 +287,49 @@ if (!isDetailPage) {
       setActiveButtons("[data-view]", "view", state.view);
       syncLiveOnlyAvailability();
       renderMatches();
+
+      if (window.innerWidth <= 900) {
+        const matchesPanel = document.querySelector(".panel-matches");
+        const tablePanel = document.querySelector(".panel-table");
+        if (state.view === "tabla") {
+          if (matchesPanel) matchesPanel.style.display = "none";
+          if (tablePanel) tablePanel.style.display = "block";
+        } else {
+          if (matchesPanel) matchesPanel.style.display = "block";
+          if (tablePanel) tablePanel.style.display = "none";
+        }
+      }
     });
   });
 
-  $("#team-search").addEventListener("input", (e) => {
+  $("#team-search")?.addEventListener("input", (e) => {
     state.search = e.target.value.trim();
     renderAll();
   });
 
-  liveOnlyInput.addEventListener("change", (e) => {
-    state.liveOnly = e.target.checked;
-    renderMatches();
-  });
+  if (liveOnlyInput) {
+    liveOnlyInput.addEventListener("change", (e) => {
+      state.liveOnly = e.target.checked;
+      renderMatches();
+    });
+  }
 
-  refreshBtn.addEventListener("click", () => {
-    triggerAutoRefresh();
-  });
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => triggerAutoRefresh());
+  }
 
-  // Interceptamos clics en listas de partidos y tablas de posiciones
+  // Delegación de clics
   document.addEventListener("click", (e) => {
-    const teamEl = e.target.closest(".team-link, .team-with-logo, [data-team-name]");
+    const teamEl = e.target.closest(".team-link, .team-with-logo, [data-team-name], .modal-team, .team-info");
+    
     if (teamEl) {
       e.stopPropagation();
-      const teamName = teamEl.dataset.teamName || teamEl.querySelector("strong, .team-name")?.textContent;
-      if (teamName) {
+      const teamName = 
+        teamEl.dataset.teamName || 
+        teamEl.querySelector(".team-name, strong, span")?.textContent?.trim() || 
+        teamEl.textContent?.trim();
+
+      if (teamName && teamName !== "vs" && teamName !== "Local" && teamName !== "Visitante") {
         goToTeamPage(teamName);
         return;
       }
@@ -249,20 +337,12 @@ if (!isDetailPage) {
 
     const card = e.target.closest(".match-card[data-match-id]");
     if (card) {
-      openMatchDetail(card.dataset.matchId);
+      // Pasamos card para que extraiga los atributos data-category y data-league de ese partido en particular
+      handleOpenMatchDetail(card.dataset.matchId, card);
     }
   });
 
-  matchesList.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    const card = e.target.closest(".match-card[data-match-id]");
-    if (!card) return;
-    e.preventDefault();
-    openMatchDetail(card.dataset.matchId);
-  });
-
   if (modalClose) modalClose.addEventListener("click", closeMatchDetail);
-
   if (matchModal) {
     matchModal.addEventListener("click", (e) => {
       if (e.target === matchModal) closeMatchDetail();
@@ -273,26 +353,29 @@ if (!isDetailPage) {
     if (e.key === "Escape" && matchModal && !matchModal.classList.contains("hidden")) closeMatchDetail();
   });
 
-  // Control de pestaña visible para pausar/reanudar el polling
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      stopAutoRefresh();
-    } else {
-      triggerAutoRefresh();
-      startAutoRefresh();
-    }
+    if (document.hidden) stopAutoRefresh();
+    else { triggerAutoRefresh(); startAutoRefresh(); }
   });
 
+  // PREPARAR E INICIALIZAR VISTA
   setDate();
   populateSeasonSelect();
   syncTorneoControls();
   loadCache();
   setLiveBanner();
   syncLiveOnlyAvailability();
-  renderAll();
-  loadCategoryData(state.category, true);
-  
-  // Arranca el refresco automático al cargar
+
+  // Restaurar liga desde la URL
+  const isEspnRestored = restoreStateFromUrl();
+
+  if (isEspnRestored && state.espnLeagueCode) {
+    loadEspnLeagueData(state.espnLeagueCode);
+  } else {
+    renderAll();
+    loadCategoryData(state.category || "primera", true);
+  }
+
   startAutoRefresh();
 } else {
   initDetailPage();

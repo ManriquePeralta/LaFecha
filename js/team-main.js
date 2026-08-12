@@ -3,7 +3,38 @@ import { normalize, noCacheFetch, fmtDateLong } from "./utils.js";
 import { API, PLACEHOLDER_LOGO } from "./config.js";
 import { fetchStandingsSafe } from "./season-types.js";
 
-function getEspnLeagueCode(category) {
+// Helper de fetch robusto contra CORS
+async function safeFetchJson(url) {
+  try {
+    const res = await fetch(url, { method: "GET" });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn(`Fetch directo bloqueado por CORS (${url}), probando proxy...`);
+  }
+
+  const proxies = [
+    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
+  ];
+
+  for (const getProxyUrl of proxies) {
+    try {
+      const proxyUrl = getProxyUrl(url);
+      const res = await fetch(proxyUrl);
+      if (res.ok) {
+        const text = await res.text();
+        return JSON.parse(text);
+      }
+    } catch (e) {
+      console.warn("Falló proxy, probando el siguiente...", e);
+    }
+  }
+
+  throw new Error(`No se pudieron obtener datos de ${url}`);
+}
+
+function getEspnLeagueCode(category, leagueParam = "") {
+  if (category === "espn" && leagueParam) return leagueParam;
   return category === "nacional" || category === "b_nacional" ? "arg.2" : "arg.1";
 }
 
@@ -58,11 +89,49 @@ function translatePosition(posRaw) {
   };
   return map[pos] || posRaw;
 }
+// En team-main.js:
 
+function setupBackButton() {
+  const params = new URLSearchParams(window.location.search);
+  const category = params.get("category") || "primera";
+  const league = params.get("league") || "";
+  const season = params.get("season") || "2026";
+  const torneo = params.get("torneo") || "clausura";
+
+  // Buscamos el botón o enlace de regresar en la plantilla
+  const backBtn = document.querySelector("#back-btn, .back-btn, .btn-back, a[href='index.html']");
+
+  if (backBtn) {
+    // Si la navegación permite volver en el historial directamente:
+    backBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      
+      if (document.referrer && document.referrer.includes(window.location.host)) {
+        window.history.back();
+      } else {
+        // Fallback construyendo la URL exacta de retorno
+        const returnParams = new URLSearchParams({
+          category,
+          league,
+          season,
+          torneo
+        });
+        window.location.href = `index.html?${returnParams.toString()}`;
+      }
+    });
+  }
+}
+
+// Llamar a setupBackButton() dentro de DOMContentLoaded o en initTeamPage()
+document.addEventListener("DOMContentLoaded", () => {
+  setupBackButton();
+  initTeamPage();
+});
 async function initTeamPage() {
   const params = new URLSearchParams(window.location.search);
   const teamParam = params.get("team");
   state.category = params.get("category") || "primera";
+  const leagueParam = params.get("league") || "";
   state.season = Number(params.get("season")) || 2026;
   state.torneo = params.get("torneo") || "clausura";
 
@@ -75,93 +144,67 @@ async function initTeamPage() {
   }
 
   const normTeam = cleanTeamSearchName(teamParam);
-  const leagueCode = getEspnLeagueCode(state.category);
+  const isEspn = state.category === "espn";
+  const leagueCode = getEspnLeagueCode(state.category, leagueParam);
 
   let teamId = null;
   let teamOfficialName = teamParam;
   let teamLogo = PLACEHOLDER_LOGO;
+  let teamMatches = [];
 
   try {
-    // 1. Petición inicial para obtener ID del club
-    const baseApiObj = API[state.category] || API.primera;
-    const scoreUrl = `${baseApiObj.scoreboard}?dates=${state.season}0101-${state.season}1231`;
-    let scoreData = { events: [] };
+    // 1. Petición del Scoreboard (Busca partidos e ID igual que en Argentina)
+    const scoreUrl = isEspn
+      ? `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`
+      : `${(API[state.category] || API.primera).scoreboard}?dates=${state.season}0101-${state.season}1231`;
 
     try {
-      const scoreRes = await noCacheFetch(scoreUrl);
-      scoreData = await scoreRes.json();
+      const scoreData = isEspn ? await safeFetchJson(scoreUrl) : await (await noCacheFetch(scoreUrl)).json();
 
       for (const e of (scoreData.events || [])) {
         const comps = e.competitions?.[0]?.competitors || [];
         const found = comps.find((c) => {
           const disp = cleanTeamSearchName(c.team?.displayName);
           const short = cleanTeamSearchName(c.team?.shortDisplayName);
+          const name = cleanTeamSearchName(c.team?.name);
           return disp.includes(normTeam) || normTeam.includes(disp) ||
-                 short.includes(normTeam) || normTeam.includes(short);
+                 short.includes(normTeam) || normTeam.includes(short) ||
+                 name.includes(normTeam) || normTeam.includes(name);
         });
 
         if (found) {
-          teamId = found.team.id;
-          teamOfficialName = found.team.displayName || teamParam;
+          teamId = found.team?.id;
+          teamOfficialName = found.team?.displayName || found.team?.name || teamParam;
           teamLogo = getTeamLogoUrl(found.team);
           break;
         }
       }
-    } catch (e) {
-      console.warn("Scoreboard general no respondió", e);
-    }
 
-    // Fallback de ID para B Nacional
-    if (!teamId) {
-      const teamsUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/teams`;
-      try {
-        const teamsRes = await noCacheFetch(teamsUrl);
-        const teamsData = await teamsRes.json();
-        const allTeams = teamsData?.sports?.[0]?.leagues?.[0]?.teams || [];
-
-        const matchedTeam = allTeams.find((item) => {
-          const t = item.team;
-          const disp = cleanTeamSearchName(t?.displayName);
-          const name = cleanTeamSearchName(t?.name);
-          return disp.includes(normTeam) || normTeam.includes(disp) || name.includes(normTeam);
-        })?.team;
-
-        if (matchedTeam) {
-          teamId = matchedTeam.id;
-          teamOfficialName = matchedTeam.displayName || teamParam;
-          teamLogo = getTeamLogoUrl(matchedTeam);
-        }
-      } catch (err) {
-        console.warn("No se pudo obtener lista estática de equipos", err);
+      if (scoreData.events) {
+        teamMatches = parseEventsToMatches(scoreData.events, teamId, normTeam);
       }
+    } catch (e) {
+      console.warn("Scoreboard falló:", e);
     }
 
-    // 2. Traer partidos (Schedule + Fallback por Scoreboard)
-    let teamMatches = [];
-
-    if (teamId) {
+    // 2. Fallback por schedule si tenemos ID de club
+    if (teamId && !teamMatches.length) {
       try {
-        const scheduleUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/teams/${teamId}/schedule?season=${state.season}`;
-        const schedRes = await noCacheFetch(scheduleUrl);
-        const schedData = await schedRes.json();
-
+        const scheduleUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/teams/${teamId}/schedule`;
+        const schedData = await safeFetchJson(scheduleUrl);
         teamMatches = parseEventsToMatches(schedData.events || [], teamId);
       } catch (e) {
-        console.warn("Schedule falló, buscando en scoreboard...", e);
+        console.warn("Schedule específico no disponible:", e);
       }
-    }
-
-    // Si el schedule de la B vino vacío, rastreamos en los eventos del scoreboard global
-    if (!teamMatches.length && scoreData.events) {
-      teamMatches = parseEventsToMatches(scoreData.events, teamId, normTeam);
     }
 
     teamMatches.sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
 
-    renderHero(heroRoot, teamOfficialName, teamLogo, teamMatches.length);
+    const leagueLabel = isEspn ? leagueParam.toUpperCase() : state.category.toUpperCase();
+    renderHero(heroRoot, teamOfficialName, teamLogo, leagueLabel, teamMatches.length);
     renderMatchesTab(tabContent, teamMatches);
 
-    // Listeners Pestañas
+    // Listeners de Pestañas
     document.querySelectorAll(".team-tab-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         document.querySelectorAll(".team-tab-btn").forEach((b) => b.classList.remove("active"));
@@ -171,7 +214,7 @@ async function initTeamPage() {
         if (tab === "matches") {
           renderMatchesTab(tabContent, teamMatches);
         } else if (tab === "standings") {
-          await renderStandingsTab(tabContent, normTeam);
+          await renderStandingsTab(tabContent, normTeam, leagueCode);
         } else if (tab === "squad") {
           await renderSquadTab(tabContent, teamId, leagueCode);
         }
@@ -184,7 +227,6 @@ async function initTeamPage() {
   }
 }
 
-// Helper para procesar partidos en formato unificado
 function parseEventsToMatches(events, teamId, normTeam = "") {
   return events.map((e) => {
     const comp = e.competitions?.[0];
@@ -193,8 +235,8 @@ function parseEventsToMatches(events, teamId, normTeam = "") {
     const home = comp.competitors.find((c) => c.homeAway === "home") || comp.competitors[0];
     const away = comp.competitors.find((c) => c.homeAway === "away") || comp.competitors[1];
 
-    const homeClean = cleanTeamSearchName(home.team?.displayName);
-    const awayClean = cleanTeamSearchName(away.team?.displayName);
+    const homeClean = cleanTeamSearchName(home.team?.displayName || home.team?.name);
+    const awayClean = cleanTeamSearchName(away.team?.displayName || away.team?.name);
 
     let isHome = false;
     if (teamId) {
@@ -236,15 +278,15 @@ function parseEventsToMatches(events, teamId, normTeam = "") {
   }).filter(Boolean);
 }
 
-function renderHero(container, name, logo, matchCount) {
+function renderHero(container, name, logo, leagueLabel, matchCount) {
   container.innerHTML = `
     <div class="team-profile-header">
       <img class="team-profile-logo" src="${logo}" alt="" />
       <div class="team-profile-info">
         <h2>${name}</h2>
         <div class="team-profile-meta">
-          <span>LIGA: ${state.category.toUpperCase()}</span>
-          <span>PARTIDOS TEMPORADA: ${matchCount}</span>
+          <span>LIGA: ${leagueLabel}</span>
+          <span>PARTIDOS REGISTRADOS: ${matchCount}</span>
         </div>
       </div>
     </div>
@@ -253,7 +295,7 @@ function renderHero(container, name, logo, matchCount) {
 
 function renderMatchesTab(container, matches) {
   if (!matches.length) {
-    container.innerHTML = '<p class="detail-empty">Sin partidos registrados en esta temporada.</p>';
+    container.innerHTML = '<p class="detail-empty">Sin partidos registrados actualmente.</p>';
     return;
   }
 
@@ -295,7 +337,6 @@ function renderMatchesTab(container, matches) {
 
   container.innerHTML = `<div class="team-fixture-container">${html}</div>`;
 
-  // Listener de clics para redirigir al detalle del partido
   container.querySelectorAll(".team-match-card[data-match-id]").forEach((card) => {
     card.addEventListener("click", () => {
       const matchId = card.dataset.matchId;
@@ -314,17 +355,91 @@ function renderMatchesTab(container, matches) {
 }
 
 // ----------------------------------------------------
-// POSICIONES ADAPTATIVAS (Sin Apertura/Clausura en la B Nacional)
+// TABLAS DE POSICIONES
 // ----------------------------------------------------
-async function renderStandingsTab(container, normTeam) {
-  const isB = isAscensoCategory(state.category);
-
-  const loadTable = async (torneoKey) => {
+// ----------------------------------------------------
+// TABLAS DE POSICIONES (AFA PRIMERA / B NACIONAL / ESPN)
+// ----------------------------------------------------
+async function renderStandingsTab(container, normTeam, leagueCode) {
+  // 1. LIGAS ESPN / COPA ARGENTINA / INTERNACIONAL
+  if (state.category === "espn") {
+    container.innerHTML = `<div id="team-standings-box"><p class="detail-loading">Cargando posiciones...</p></div>`;
     const tableBox = container.querySelector("#team-standings-box");
-    if (tableBox) tableBox.innerHTML = '<p class="detail-loading">Cargando posiciones...</p>';
 
     try {
-      const data = await fetchStandingsSafe(state.category, state.season, torneoKey);
+      const data = await safeFetchJson(`https://site.api.espn.com/apis/v2/sports/soccer/${leagueCode}/standings`);
+      const standingsGroup = data.children?.[0]?.standings || data.standings?.[0] || [];
+      const entries = standingsGroup.entries || [];
+
+      if (!entries.length) {
+        tableBox.innerHTML = '<p class="detail-empty">Tabla de posiciones no disponible.</p>';
+        return;
+      }
+
+      const rows = entries.map((item, idx) => {
+        const teamClean = cleanTeamSearchName(item.team?.displayName || item.team?.name);
+        const isTarget = teamClean.includes(normTeam) || normTeam.includes(teamClean);
+        const stats = item.stats || [];
+        const getStat = (n) => stats.find(s => s.name === n)?.value ?? 0;
+
+        return `
+          <tr class="${isTarget ? 'highlight-row' : ''}">
+            <td class="col-pos">${idx + 1}</td>
+            <td class="col-team">
+              ${item.team?.logos?.[0]?.href ? `<img class="team-mini-logo" src="${item.team.logos[0].href}" alt="" />` : ''}
+              <strong>${item.team?.shortDisplayName || item.team?.displayName}</strong>
+            </td>
+            <td class="col-pts"><strong>${getStat("points")}</strong></td>
+            <td>${getStat("gamesPlayed")}</td>
+            <td>${getStat("wins")}</td>
+            <td>${getStat("ties")}</td>
+            <td>${getStat("losses")}</td>
+            <td>${getStat("pointsFor")}</td>
+            <td>${getStat("pointsAgainst")}</td>
+            <td class="col-dg">${getStat("pointDifferential")}</td>
+          </tr>
+        `;
+      }).join("");
+
+      tableBox.innerHTML = `
+        <div class="table-responsive">
+          <table class="team-standings-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">EQUIPO</th>
+                <th class="col-pts">PTS</th>
+                <th>PJ</th>
+                <th>PG</th>
+                <th>PE</th>
+                <th>PP</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th class="col-dg">DG</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      console.error(err);
+      tableBox.innerHTML = '<p class="detail-empty">Error al cargar la tabla de posiciones.</p>';
+    }
+    return;
+  }
+
+  // 2. FÚTBOL ARGENTINO (AFA)
+  const isB = isAscensoCategory(state.category) || state.category === "segunda";
+
+  const loadAfaTable = async (torneoKey) => {
+    const tableBox = container.querySelector("#team-standings-box");
+    if (tableBox) tableBox.innerHTML = '<p class="detail-loading">Cargando posiciones de Argentina...</p>';
+
+    try {
+      // Sincronizamos la categoría nativa
+      const categoryToFetch = (state.category === "segunda" || state.category === "b_nacional") ? "segunda" : "primera";
+      const data = await fetchStandingsSafe(categoryToFetch, state.season, torneoKey);
       const zonas = data?.zonas || [];
 
       if (!zonas.length) {
@@ -332,6 +447,7 @@ async function renderStandingsTab(container, normTeam) {
         return;
       }
 
+      // Buscar la zona donde juega este club
       let targetZone = zonas.find((z) =>
         (z.tabla || []).some((r) => cleanTeamSearchName(r.equipo).includes(normTeam))
       ) || zonas[0];
@@ -364,7 +480,7 @@ async function renderStandingsTab(container, normTeam) {
       if (tableBox) {
         tableBox.innerHTML = `
           <div class="zone-header">
-            <span class="zone-title-badge">${targetZone.nombre || "Zona A"}</span>
+            <span class="zone-title-badge">${targetZone.nombre || "Posiciones"}</span>
           </div>
           <div class="table-responsive">
             <table class="team-standings-table">
@@ -385,22 +501,21 @@ async function renderStandingsTab(container, normTeam) {
               <tbody>${rows}</tbody>
             </table>
           </div>
-          <div class="table-legend">
-            <span class="legend-indicator"></span> Clasifican a zona de Reducido / Octavos
-          </div>
         `;
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error al cargar la tabla de AFA:", e);
+      const tableBox = container.querySelector("#team-standings-box");
       if (tableBox) tableBox.innerHTML = '<p class="detail-empty">Error al cargar la tabla de posiciones.</p>';
     }
   };
 
-  // En la B Nacional no renderizamos el selector Apertura/Clausura
   if (isB) {
+    // La Primera Nacional (B) usa tabla Anual / General
     container.innerHTML = `<div id="team-standings-box"></div>`;
-    await loadTable("anual");
+    await loadAfaTable("anual");
   } else {
+    // Primera División tiene selector Apertura / Clausura
     let activeTorneo = state.torneo || "clausura";
     container.innerHTML = `
       <div class="torneo-selector-bar">
@@ -414,16 +529,17 @@ async function renderStandingsTab(container, normTeam) {
       btn.addEventListener("click", () => {
         container.querySelectorAll(".torneo-sub-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        loadTable(btn.dataset.torneo);
+        state.torneo = btn.dataset.torneo;
+        loadAfaTable(btn.dataset.torneo);
       });
     });
 
-    await loadTable(activeTorneo);
+    await loadAfaTable(activeTorneo);
   }
 }
 
 // ----------------------------------------------------
-// PLANTEL CON FALLBACK A RESÚMENES
+// PLANTEL
 // ----------------------------------------------------
 async function renderSquadTab(container, teamId, leagueCode = "arg.1") {
   if (!teamId) {
@@ -435,52 +551,12 @@ async function renderSquadTab(container, teamId, leagueCode = "arg.1") {
 
   try {
     const rosterUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/teams/${teamId}/roster`;
-    const rosterRes = await noCacheFetch(rosterUrl);
-    const rosterData = await rosterRes.json();
+    const rosterData = await safeFetchJson(rosterUrl);
 
     let athletes = rosterData?.athletes || [];
 
-    // Fallback: Reconstruir plantel con partidos recientes de la B
     if (!athletes.length) {
-      const schedUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/teams/${teamId}/schedule?season=${state.season}`;
-      const schedRes = await noCacheFetch(schedUrl);
-      const schedData = await schedRes.json();
-
-      const completedEvents = (schedData.events || []).filter((e) => e.competitions?.[0]?.status?.type?.state === "post");
-      const playerMap = new Map();
-
-      for (const e of completedEvents.slice(-6)) {
-        const comp = e.competitions?.[0];
-        if (!comp) continue;
-
-        const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/summary?event=${comp.id}`;
-        try {
-          const sumRes = await noCacheFetch(summaryUrl);
-          const sumData = await sumRes.json();
-          const rosters = sumData?.rosters || [];
-
-          for (const r of rosters) {
-            if (String(r.team?.id) === String(teamId)) {
-              for (const entry of (r.roster || [])) {
-                const ath = entry.athlete;
-                if (ath && !playerMap.has(ath.id)) {
-                  playerMap.set(ath.id, {
-                    jersey: entry.jersey || ath.jersey || "•",
-                    displayName: ath.displayName || ath.fullName,
-                    position: entry.position?.displayName || ath.position?.displayName || "Jugador"
-                  });
-                }
-              }
-            }
-          }
-        } catch (err) {}
-      }
-
-      athletes = Array.from(playerMap.values());
-    }
-
-    if (!athletes.length) {
-      container.innerHTML = '<p class="detail-empty">Plantel oficial no disponible en la API para este club del ascenso.</p>';
+      container.innerHTML = '<p class="detail-empty">Plantel oficial no disponible actualmente.</p>';
       return;
     }
 

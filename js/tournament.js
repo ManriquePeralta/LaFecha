@@ -6,9 +6,7 @@ import {
 } from "./config.js";
 
 import {
-  fetchStandingsSafe,
-  discoverSeasonTypes,
-  summaryUrl
+  fetchStandingsSafe
 } from "./season-types.js";
 
 import {
@@ -16,9 +14,8 @@ import {
   noCacheFetch
 } from "./utils.js";
 
-
 // ============================================================
-// PARÁMETROS
+// PARÁMETROS DE URL
 // ============================================================
 
 const params = new URLSearchParams(window.location.search);
@@ -38,24 +35,29 @@ const espnLeagueCode =
 const isEspnLeague =
   category === "espn";
 
-
 // ============================================================
-// ESTADO LOCAL
+// ESTADO
 // ============================================================
 
 const state = {
   category,
   season,
   torneo,
+
   leagueCode: "",
+
   standings: [],
+  standingsZones: [],
+
   matches: [],
   filteredMatches: [],
+
   loading: false,
+
   search: "",
+
   lastUpdated: null
 };
-
 
 // ============================================================
 // DOM
@@ -88,27 +90,23 @@ const searchEl =
 const backButton =
   document.querySelector("#back-button");
 
-
 // ============================================================
-// CONFIGURACIÓN DE LIGA
+// CONFIGURACIÓN DE COMPETENCIA
 // ============================================================
 
 function getLeagueCode() {
-
   if (isEspnLeague) {
     return espnLeagueCode;
   }
 
-  return LEAGUE_CODE[category] || "";
+  return LEAGUE_CODE[state.category] || "";
 }
-
 
 // ============================================================
 // NOMBRE DEL TORNEO
 // ============================================================
 
 function tournamentName() {
-
   if (isEspnLeague) {
     return "Competencia";
   }
@@ -117,21 +115,26 @@ function tournamentName() {
     return "Primera Nacional";
   }
 
-  if (season >= SPLIT_SEASON_MIN_YEAR) {
-    return torneo === "clausura"
-      ? "Clausura"
-      : "Apertura";
+  if (
+    season >= SPLIT_SEASON_MIN_YEAR &&
+    category === "primera"
+  ) {
+    return torneo === "apertura"
+      ? "Apertura"
+      : "Clausura";
   }
 
   return "Primera División";
 }
 
-
 // ============================================================
-// TITULO
+// HEADER
 // ============================================================
 
 function renderHeader() {
+  if (!competitionEl || !titleEl || !subtitleEl) {
+    return;
+  }
 
   const competition =
     isEspnLeague
@@ -148,30 +151,32 @@ function renderHeader() {
 
   subtitleEl.textContent =
     `Temporada ${season}`;
-
 }
-
 
 // ============================================================
 // STATUS
 // ============================================================
 
 function setStatus(text, type = "") {
-
-  statusTextEl.textContent = text;
+  if (statusTextEl) {
+    statusTextEl.textContent = text;
+  }
 
   const bar =
     document.querySelector("#status-bar");
 
-  bar.classList.toggle(
-    "live",
-    type === "live"
-  );
-
+  if (bar) {
+    bar.classList.toggle(
+      "live",
+      type === "live"
+    );
+  }
 }
 
-
 function setLastUpdate() {
+  if (!lastUpdateEl) {
+    return;
+  }
 
   if (!state.lastUpdated) {
     lastUpdateEl.textContent = "";
@@ -180,18 +185,19 @@ function setLastUpdate() {
 
   lastUpdateEl.textContent =
     `Actualizado ${
-      new Intl.DateTimeFormat("es-AR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      }).format(state.lastUpdated)
+      new Intl.DateTimeFormat(
+        "es-AR",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }
+      ).format(state.lastUpdated)
     }`;
-
 }
 
-
 // ============================================================
-// FETCH SCOREBOARD
+// SCOREBOARD URL
 // ============================================================
 
 function scoreboardUrl(
@@ -199,32 +205,30 @@ function scoreboardUrl(
   from,
   to
 ) {
-
   const url =
     `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`;
 
-  const params = new URLSearchParams();
+  const query =
+    new URLSearchParams();
 
-  params.set(
+  query.set(
     "dates",
     `${from}-${to}`
   );
 
-  params.set(
+  query.set(
     "limit",
     "1000"
   );
 
-  return `${url}?${params.toString()}`;
+  return `${url}?${query.toString()}`;
 }
-
 
 // ============================================================
 // FECHAS
 // ============================================================
 
 function formatDateForApi(date) {
-
   const year =
     date.getFullYear();
 
@@ -239,16 +243,11 @@ function formatDateForApi(date) {
   return `${year}${month}${day}`;
 }
 
-
 function tournamentDateRange() {
 
-  /*
-   * Apertura:
-   * enero -> junio
-   *
-   * Clausura:
-   * julio -> diciembre
-   */
+  // ========================================================
+  // PRIMERA ARGENTINA
+  // ========================================================
 
   if (
     !isEspnLeague &&
@@ -257,12 +256,10 @@ function tournamentDateRange() {
   ) {
 
     if (torneo === "apertura") {
-
       return {
         from: `${season}0101`,
         to: `${season}0630`
       };
-
     }
 
     return {
@@ -271,19 +268,21 @@ function tournamentDateRange() {
     };
   }
 
+  // ========================================================
+  // RESTO DE COMPETENCIAS
+  // ========================================================
+
   return {
     from: `${season}0101`,
     to: `${season}1231`
   };
 }
 
-
 // ============================================================
-// OBTENER PARTIDOS
+// OBTENER PARTIDOS DEL TORNEO
 // ============================================================
 
 async function fetchTournamentMatches() {
-
   const leagueCode =
     state.leagueCode;
 
@@ -295,11 +294,6 @@ async function fetchTournamentMatches() {
 
   const range =
     tournamentDateRange();
-
-  /*
-   * ESPN puede limitar respuestas muy grandes.
-   * Dividimos el año en bloques mensuales.
-   */
 
   const fromDate =
     parseDate(range.from);
@@ -358,7 +352,7 @@ async function fetchTournamentMatches() {
     .flat()
     .forEach((match) => {
 
-      if (!match.id) {
+      if (!match?.id) {
         return;
       }
 
@@ -366,31 +360,34 @@ async function fetchTournamentMatches() {
         String(match.id),
         match
       );
-
     });
 
   return [...map.values()]
     .sort((a, b) => {
 
       const da =
-        new Date(a.dateIso || 0)
-          .getTime();
+        new Date(
+          a.dateIso || 0
+        ).getTime();
 
       const db =
-        new Date(b.dateIso || 0)
-          .getTime();
+        new Date(
+          b.dateIso || 0
+        ).getTime();
 
       return da - db;
     });
 }
 
+// ============================================================
+// CHUNK ESPN
+// ============================================================
 
 async function fetchScoreboardChunk(
   leagueCode,
   from,
   to
 ) {
-
   try {
 
     const res =
@@ -403,6 +400,13 @@ async function fetchScoreboardChunk(
       );
 
     if (!res.ok) {
+      console.warn(
+        "ESPN respondió",
+        res.status,
+        from,
+        to
+      );
+
       return [];
     }
 
@@ -424,9 +428,8 @@ async function fetchScoreboardChunk(
   }
 }
 
-
 // ============================================================
-// PARSE DE PARTIDOS ESPN
+// PARSE PARTIDOS ESPN
 // ============================================================
 
 function parseScoreboardEvents(json) {
@@ -446,13 +449,13 @@ function parseScoreboardEvents(json) {
 
     const home =
       competitors.find(
-        (team) =>
+        team =>
           team.homeAway === "home"
       );
 
     const away =
       competitors.find(
-        (team) =>
+        team =>
           team.homeAway === "away"
       );
 
@@ -477,12 +480,9 @@ function parseScoreboardEvents(json) {
     const isLive =
       !completed &&
       (
-        type.state === "in"
-        ||
-        stateName === "IN"
-        ||
-        stateName === "IN_PROGRESS"
-        ||
+        type.state === "in" ||
+        stateName === "IN" ||
+        stateName === "IN_PROGRESS" ||
         stateName === "LIVE"
       );
 
@@ -505,18 +505,19 @@ function parseScoreboardEvents(json) {
       competition?.date ||
       null;
 
-    const minute =
+    const clock =
       status?.clock != null
-        ? Math.floor(
-            Number(status.clock) / 60
-          )
+        ? Number(status.clock)
+        : null;
+
+    const minute =
+      Number.isFinite(clock)
+        ? Math.floor(clock / 60)
         : null;
 
     const second =
-      status?.clock != null
-        ? Math.floor(
-            Number(status.clock) % 60
-          )
+      Number.isFinite(clock)
+        ? Math.floor(clock % 60)
         : 0;
 
     return {
@@ -529,11 +530,13 @@ function parseScoreboardEvents(json) {
       local:
         home?.team?.displayName ||
         home?.team?.shortDisplayName ||
+        home?.team?.name ||
         "Local",
 
       visitante:
         away?.team?.displayName ||
         away?.team?.shortDisplayName ||
+        away?.team?.name ||
         "Visitante",
 
       localLogo:
@@ -570,19 +573,23 @@ function parseScoreboardEvents(json) {
 
       second,
 
-      summary:
-        event.id
-          ? summaryUrl(
-              state.category === "segunda"
-                ? "segunda"
-                : "primera",
-              event.id
-            )
-          : null
+      // IMPORTANTE:
+      // no mandamos al resumen de ESPN.
+      // El detalle se abre mediante detail.html.
+      category:
+        state.category,
+
+      league:
+        state.leagueCode,
+
+      season:
+        state.season,
+
+      torneo:
+        state.torneo
     };
   });
 }
-
 
 // ============================================================
 // PARSE DATE
@@ -606,19 +613,17 @@ function parseDate(value) {
   );
 }
 
-
 // ============================================================
-// TABLA
+// TABLAS
 // ============================================================
 
 async function loadStandings() {
 
-  if (isEspnLeague) {
+  // ========================================================
+  // ESPN EXTERNO
+  // ========================================================
 
-    /*
-     * Para una competencia ESPN externa:
-     * usamos directamente el endpoint de standings.
-     */
+  if (isEspnLeague) {
 
     const url =
       `https://site.api.espn.com/apis/v2/sports/soccer/${state.leagueCode}/standings?season=${season}`;
@@ -635,11 +640,21 @@ async function loadStandings() {
     const json =
       await res.json();
 
-    state.standings =
+    const parsed =
       parseGenericStandings(json);
+
+    state.standings =
+      parsed.rows;
+
+    state.standingsZones =
+      parsed.zones;
 
     return;
   }
+
+  // ========================================================
+  // ARGENTINA
+  // ========================================================
 
   const result =
     await fetchStandingsSafe(
@@ -648,101 +663,517 @@ async function loadStandings() {
       torneo
     );
 
+  const parsed =
+    parseArgentinaStandings(
+      result
+    );
+
   state.standings =
-    result?.tabla || [];
+    parsed.rows;
+
+  state.standingsZones =
+    parsed.zones;
 }
 
+// ============================================================
+// PARSE TABLAS ARGENTINAS
+// ============================================================
+
+function parseArgentinaStandings(result) {
+
+  if (!result) {
+    return {
+      rows: [],
+      zones: []
+    };
+  }
+
+  // --------------------------------------------------------
+  // Caso ideal:
+  //
+  // {
+  //   zonas: [
+  //     {
+  //       nombre: "Zona A",
+  //       tabla: [...]
+  //     },
+  //     {
+  //       nombre: "Zona B",
+  //       tabla: [...]
+  //     }
+  //   ]
+  // }
+  // --------------------------------------------------------
+
+  if (
+    Array.isArray(result.zonas) &&
+    result.zonas.length
+  ) {
+
+    const zones =
+      result.zonas
+        .map((zone, index) => {
+
+          const rows =
+            Array.isArray(zone?.tabla)
+              ? zone.tabla
+              : Array.isArray(zone?.entries)
+                ? zone.entries
+                : [];
+
+          return {
+            nombre:
+              zone?.nombre ||
+              zone?.name ||
+              `Zona ${String.fromCharCode(65 + index)}`,
+
+            tabla:
+              normalizeRows(rows)
+          };
+        })
+        .filter(zone =>
+          zone.tabla.length
+        );
+
+    return {
+      rows:
+        zones.flatMap(
+          zone => zone.tabla
+        ),
+
+      zones
+    };
+  }
+
+  // --------------------------------------------------------
+  // Caso:
+  //
+  // result.tabla = [...]
+  // --------------------------------------------------------
+
+  if (
+    Array.isArray(result.tabla)
+  ) {
+
+    const rows =
+      normalizeRows(
+        result.tabla
+      );
+
+    return {
+      rows,
+      zones: []
+    };
+  }
+
+  // --------------------------------------------------------
+  // Caso:
+  //
+  // result.standings = [...]
+  // --------------------------------------------------------
+
+  if (
+    Array.isArray(result.standings)
+  ) {
+
+    const rows =
+      normalizeRows(
+        result.standings
+      );
+
+    return {
+      rows,
+      zones: []
+    };
+  }
+
+  // --------------------------------------------------------
+  // Caso array directo
+  // --------------------------------------------------------
+
+  if (
+    Array.isArray(result)
+  ) {
+
+    const rows =
+      normalizeRows(result);
+
+    return {
+      rows,
+      zones: []
+    };
+  }
+
+  return {
+    rows: [],
+    zones: []
+  };
+}
 
 // ============================================================
-// PARSE STANDINGS ESPN GENÉRICO
+// PARSE TABLA ESPN
 // ============================================================
 
 function parseGenericStandings(json) {
 
   const groups =
-    json?.children ||
-    json?.standings?.children ||
-    [];
+    Array.isArray(json?.children)
+      ? json.children
+      : [];
 
-  const firstGroup =
-    groups[0];
+  // --------------------------------------------------------
+  // Si ESPN devuelve múltiples grupos,
+  // los tratamos como zonas.
+  // --------------------------------------------------------
+
+  if (groups.length > 1) {
+
+    const zones =
+      groups
+        .map((group, index) => {
+
+          const entries =
+            group?.standings?.entries || [];
+
+          return {
+            nombre:
+              group?.name ||
+              group?.abbreviation ||
+              `Zona ${String.fromCharCode(65 + index)}`,
+
+            tabla:
+              normalizeRows(
+                entries.map(
+                  normalizeEspnEntry
+                )
+              )
+          };
+        })
+        .filter(zone =>
+          zone.tabla.length
+        );
+
+    return {
+      rows:
+        zones.flatMap(
+          zone => zone.tabla
+        ),
+
+      zones
+    };
+  }
 
   const entries =
-    firstGroup?.standings?.entries ||
+    groups[0]?.standings?.entries ||
     json?.standings?.entries ||
     [];
 
-  return entries.map((entry) => {
+  const rows =
+    entries.map(
+      normalizeEspnEntry
+    );
 
-    const stats =
-      entry.stats || [];
+  return {
+    rows,
+    zones: []
+  };
+}
 
-    const stat =
-      (name, fallback = 0) => {
+// ============================================================
+// NORMALIZAR ENTRADA ESPN
+// ============================================================
 
-        const found =
-          stats.find(
-            (item) =>
-              item.name === name ||
-              item.abbreviation === name
-          );
+function normalizeEspnEntry(entry) {
 
-        return Number(
-          found?.value ?? fallback
+  const stats =
+    entry?.stats || [];
+
+  const stat =
+    (name, fallback = 0) => {
+
+      const found =
+        stats.find(
+          item =>
+            item.name === name ||
+            item.abbreviation === name
         );
-      };
 
+      return Number(
+        found?.value ??
+        fallback
+      );
+    };
+
+  return {
+
+    equipo:
+      entry?.team?.displayName ||
+      entry?.team?.name ||
+      "Equipo",
+
+    logo:
+      entry?.team?.logos?.[0]?.href ||
+      entry?.team?.logo ||
+      PLACEHOLDER_LOGO,
+
+    pts:
+      stat("points"),
+
+    pj:
+      stat("gamesPlayed"),
+
+    pg:
+      stat("wins"),
+
+    pe:
+      stat("ties"),
+
+    pp:
+      stat("losses"),
+
+    gf:
+      stat("pointsFor"),
+
+    gc:
+      stat("pointsAgainst"),
+
+    dg:
+      stat("pointDifferential")
+  };
+}
+
+// ============================================================
+// NORMALIZAR FILAS
+// ============================================================
+
+function normalizeRows(rows) {
+
+  return rows.map((team) => {
+
+    // Ya está normalizado
+    if (
+      team &&
+      typeof team === "object" &&
+      team.equipo
+    ) {
+      return {
+        equipo:
+          team.equipo,
+
+        logo:
+          team.logo ||
+          PLACEHOLDER_LOGO,
+
+        pts:
+          Number(team.pts || 0),
+
+        pj:
+          Number(team.pj || 0),
+
+        pg:
+          Number(team.pg || 0),
+
+        pe:
+          Number(team.pe || 0),
+
+        pp:
+          Number(team.pp || 0),
+
+        gf:
+          Number(team.gf || 0),
+
+        gc:
+          Number(team.gc || 0),
+
+        dg:
+          Number(team.dg || 0)
+      };
+    }
+
+    // Estructura más genérica
     return {
 
       equipo:
-        entry.team?.displayName ||
-        entry.team?.name ||
+        team?.equipo ||
+        team?.team ||
+        team?.nombre ||
+        team?.name ||
+        team?.displayName ||
         "Equipo",
 
       logo:
-        entry.team?.logos?.[0]?.href ||
-        entry.team?.logo ||
+        team?.logo ||
+        team?.teamLogo ||
         PLACEHOLDER_LOGO,
 
       pts:
-        stat("points"),
+        Number(
+          team?.pts ??
+          team?.points ??
+          0
+        ),
 
       pj:
-        stat("gamesPlayed"),
+        Number(
+          team?.pj ??
+          team?.gamesPlayed ??
+          0
+        ),
+
+      pg:
+        Number(
+          team?.pg ??
+          team?.wins ??
+          0
+        ),
+
+      pe:
+        Number(
+          team?.pe ??
+          team?.ties ??
+          team?.draws ??
+          0
+        ),
+
+      pp:
+        Number(
+          team?.pp ??
+          team?.losses ??
+          0
+        ),
+
+      gf:
+        Number(
+          team?.gf ??
+          team?.goalsFor ??
+          0
+        ),
+
+      gc:
+        Number(
+          team?.gc ??
+          team?.goalsAgainst ??
+          0
+        ),
 
       dg:
-        stat("pointDifferential")
+        Number(
+          team?.dg ??
+          team?.goalDifference ??
+          (
+            Number(team?.gf || 0) -
+            Number(team?.gc || 0)
+          )
+        )
     };
   });
 }
 
-
 // ============================================================
-// RENDER TABLA
+// RENDER TABLAS
 // ============================================================
 
 function renderStandings() {
 
+  if (!standingsBody) {
+    return;
+  }
+
   const needle =
     normalize(state.search);
 
+  // ========================================================
+  // TABLA POR ZONAS
+  // ========================================================
+
+  if (
+    Array.isArray(state.standingsZones) &&
+    state.standingsZones.length
+  ) {
+
+    const html =
+      state.standingsZones
+        .map((zone) => {
+
+          const rows =
+            zone.tabla.filter((team) => {
+
+              if (!needle) {
+                return true;
+              }
+
+              return normalize(
+                team.equipo
+              ).includes(needle);
+            });
+
+          return `
+
+            <tr class="zone-header">
+              <td colspan="5">
+                ${escapeHtml(zone.nombre)}
+              </td>
+            </tr>
+
+            ${
+              rows.length
+                ? rows
+                    .map(
+                      (team, index) =>
+                        renderStandingRow(
+                          team,
+                          index
+                        )
+                    )
+                    .join("")
+                : `
+                  <tr>
+                    <td
+                      colspan="5"
+                      class="empty"
+                    >
+                      No hay equipos para mostrar.
+                    </td>
+                  </tr>
+                `
+            }
+
+          `;
+        })
+        .join("");
+
+    standingsBody.innerHTML =
+      html;
+
+    return;
+  }
+
+  // ========================================================
+  // TABLA NORMAL
+  // ========================================================
+
   const rows =
-    state.standings.filter((team) => {
+    state.standings.filter(
+      (team) => {
 
-      if (!needle) {
-        return true;
+        if (!needle) {
+          return true;
+        }
+
+        return normalize(
+          team.equipo
+        ).includes(needle);
       }
-
-      return normalize(
-        team.equipo
-      ).includes(needle);
-    });
+    );
 
   if (!rows.length) {
 
     standingsBody.innerHTML = `
       <tr>
-        <td colspan="5" class="empty">
+        <td
+          colspan="5"
+          class="empty"
+        >
           No hay equipos para mostrar.
         </td>
       </tr>
@@ -752,52 +1183,76 @@ function renderStandings() {
   }
 
   standingsBody.innerHTML =
-    rows.map((team, index) => {
-
-      const dg =
-        Number(team.dg || 0);
-
-      return `
-        <tr>
-
-          <td class="position">
-            ${index + 1}
-          </td>
-
-          <td>
-            <div class="team">
-
-              <img
-                class="team-logo"
-                src="${team.logo || PLACEHOLDER_LOGO}"
-                alt=""
-              >
-
-              <strong>
-                ${escapeHtml(team.equipo)}
-              </strong>
-
-            </div>
-          </td>
-
-          <td class="pts">
-            ${Number(team.pts || 0)}
-          </td>
-
-          <td>
-            ${Number(team.pj || 0)}
-          </td>
-
-          <td>
-            ${dg > 0 ? "+" : ""}${dg}
-          </td>
-
-        </tr>
-      `;
-
-    }).join("");
+    rows
+      .map(
+        (team, index) =>
+          renderStandingRow(
+            team,
+            index
+          )
+      )
+      .join("");
 }
 
+// ============================================================
+// FILA DE TABLA
+// ============================================================
+
+function renderStandingRow(
+  team,
+  index
+) {
+
+  const dg =
+    Number(team.dg || 0);
+
+  return `
+    <tr>
+
+      <td class="position">
+        ${index + 1}
+      </td>
+
+      <td>
+        <div class="team">
+
+          <img
+            class="team-logo"
+            src="${escapeAttribute(
+              team.logo ||
+              PLACEHOLDER_LOGO
+            )}"
+            alt=""
+          >
+
+          <strong>
+            ${escapeHtml(
+              team.equipo
+            )}
+          </strong>
+
+        </div>
+      </td>
+
+      <td class="pts">
+        ${Number(team.pts || 0)}
+      </td>
+
+      <td>
+        ${Number(team.pj || 0)}
+      </td>
+
+      <td>
+        ${
+          dg > 0
+            ? "+"
+            : ""
+        }${dg}
+      </td>
+
+    </tr>
+  `;
+}
 
 // ============================================================
 // RENDER PARTIDOS
@@ -805,24 +1260,32 @@ function renderStandings() {
 
 function renderMatches() {
 
+  if (!matchesContainer) {
+    return;
+  }
+
   const needle =
     normalize(state.search);
 
   const filtered =
-    state.matches.filter((match) => {
+    state.matches.filter(
+      (match) => {
 
-      if (!needle) {
-        return true;
+        if (!needle) {
+          return true;
+        }
+
+        return (
+          normalize(
+            match.local
+          ).includes(needle) ||
+
+          normalize(
+            match.visitante
+          ).includes(needle)
+        );
       }
-
-      return (
-        normalize(match.local)
-          .includes(needle) ||
-        normalize(match.visitante)
-          .includes(needle)
-      );
-
-    });
+    );
 
   state.filteredMatches =
     filtered;
@@ -839,88 +1302,119 @@ function renderMatches() {
   }
 
   const groups =
-    groupMatchesByDate(filtered);
+    groupMatchesByDate(
+      filtered
+    );
 
   matchesContainer.innerHTML =
-    groups.map((group) => {
-
-      return `
-        <div class="day-divider">
-
-          <span>
-            ${escapeHtml(group.label)}
-          </span>
-
-          <span>
-            ${group.matches.length}
-            ${group.matches.length === 1
-              ? "partido"
-              : "partidos"}
-          </span>
-
-        </div>
-
-        ${group.matches
-          .map(renderMatch)
-          .join("")}
-      `;
-
-    }).join("");
+    groups
+      .map(
+        renderMatchGroup
+      )
+      .join("");
 }
 
-
 // ============================================================
-// AGRUPAR PARTIDOS
+// GRUPOS POR FECHA
 // ============================================================
 
-function groupMatchesByDate(matches) {
+function groupMatchesByDate(
+  matches
+) {
 
   const groups =
     new Map();
 
-  matches.forEach((match) => {
+  matches.forEach(
+    (match) => {
 
-    const date =
-      match.dateIso
-        ? new Date(match.dateIso)
-        : null;
+      const date =
+        match.dateIso
+          ? new Date(
+              match.dateIso
+            )
+          : null;
 
-    const key =
-      date
-        ? date.toISOString()
-            .slice(0, 10)
-        : "sin-fecha";
+      const key =
+        date
+          ? date
+              .toISOString()
+              .slice(0, 10)
+          : "sin-fecha";
 
-    if (!groups.has(key)) {
+      if (!groups.has(key)) {
 
-      groups.set(key, {
-        label:
-          date
-            ? new Intl.DateTimeFormat(
-                "es-AR",
-                {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long"
-                }
-              ).format(date)
-            : "Fecha a confirmar",
+        groups.set(
+          key,
+          {
+            label:
+              date
+                ? new Intl.DateTimeFormat(
+                    "es-AR",
+                    {
+                      weekday:
+                        "long",
 
-        matches: []
-      });
+                      day:
+                        "numeric",
 
+                      month:
+                        "long"
+                    }
+                  ).format(date)
+
+                : "Fecha a confirmar",
+
+            matches: []
+          }
+        );
+      }
+
+      groups
+        .get(key)
+        .matches
+        .push(match);
     }
+  );
 
-    groups
-      .get(key)
-      .matches
-      .push(match);
-
-  });
-
-  return [...groups.values()];
+  return [
+    ...groups.values()
+  ];
 }
 
+// ============================================================
+// GRUPO DE PARTIDOS
+// ============================================================
+
+function renderMatchGroup(
+  group
+) {
+
+  return `
+    <div class="day-divider">
+
+      <span>
+        ${escapeHtml(
+          group.label
+        )}
+      </span>
+
+      <span>
+        ${group.matches.length}
+        ${
+          group.matches.length === 1
+            ? "partido"
+            : "partidos"
+        }
+      </span>
+
+    </div>
+
+    ${group.matches
+      .map(renderMatch)
+      .join("")}
+  `;
+}
 
 // ============================================================
 // CARD PARTIDO
@@ -946,7 +1440,9 @@ function renderMatch(match) {
       ? "EN VIVO"
       : final
         ? "FINAL"
-        : formatHour(match.dateIso);
+        : formatHour(
+            match.dateIso
+          );
 
   const score =
     match.gl !== null &&
@@ -959,34 +1455,46 @@ function renderMatch(match) {
   if (live) {
 
     const seconds =
-      Number(match.second || 0);
+      Number(
+        match.second || 0
+      );
 
     const minute =
-      Number(match.minute || 0);
+      Number(
+        match.minute || 0
+      );
 
     liveClock =
-      `${minute}:${String(seconds)
-        .padStart(2, "0")}`;
+      `${minute}:${String(
+        seconds
+      ).padStart(2, "0")}`;
   }
-
-  const summary =
-    match.summary
-      ? `
-        <a
-          class="summary-link"
-          href="${match.summary}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Ver resumen →
-        </a>
-      `
-      : "";
 
   return `
     <article
-      class="match ${live ? "live" : ""}"
-      data-match-id="${match.id}"
+      class="match ${
+        live ? "live" : ""
+      }"
+      data-match-id="${escapeAttribute(
+        match.id
+      )}"
+      data-category="${escapeAttribute(
+        match.category || state.category
+      )}"
+      data-league="${escapeAttribute(
+        match.league || state.leagueCode
+      )}"
+      data-season="${state.season}"
+      data-torneo="${escapeAttribute(
+        state.torneo
+      )}"
+      tabindex="0"
+      role="button"
+      aria-label="Ver detalle de ${
+        escapeHtml(match.local)
+      } contra ${
+        escapeHtml(match.visitante)
+      }"
     >
 
       <div class="match-top">
@@ -1015,12 +1523,17 @@ function renderMatch(match) {
 
           <img
             class="team-logo"
-            src="${match.localLogo || PLACEHOLDER_LOGO}"
+            src="${escapeAttribute(
+              match.localLogo ||
+              PLACEHOLDER_LOGO
+            )}"
             alt=""
           >
 
           <span>
-            ${escapeHtml(match.local)}
+            ${escapeHtml(
+              match.local
+            )}
           </span>
 
         </div>
@@ -1032,12 +1545,17 @@ function renderMatch(match) {
         <div class="match-team away">
 
           <span>
-            ${escapeHtml(match.visitante)}
+            ${escapeHtml(
+              match.visitante
+            )}
           </span>
 
           <img
             class="team-logo"
-            src="${match.visitanteLogo || PLACEHOLDER_LOGO}"
+            src="${escapeAttribute(
+              match.visitanteLogo ||
+              PLACEHOLDER_LOGO
+            )}"
             alt=""
           >
 
@@ -1045,12 +1563,170 @@ function renderMatch(match) {
 
       </div>
 
-      ${summary}
+      <div class="match-detail-hint">
+        Ver detalle →
+      </div>
 
     </article>
   `;
 }
 
+// ============================================================
+// ABRIR DETAIL.JS
+// ============================================================
+
+function openMatchDetail(
+  matchId,
+  match = null
+) {
+
+  if (!matchId) {
+    return;
+  }
+
+  const categoryValue =
+    match?.category ||
+    state.category ||
+    "primera";
+
+  const leagueValue =
+    match?.league ||
+    state.leagueCode ||
+    "";
+
+  const seasonValue =
+    match?.season ||
+    state.season ||
+    2026;
+
+  const torneoValue =
+    match?.torneo ||
+    state.torneo ||
+    "clausura";
+
+  const detailParams =
+    new URLSearchParams();
+
+  detailParams.set(
+    "matchId",
+    String(matchId)
+  );
+
+  detailParams.set(
+    "category",
+    categoryValue
+  );
+
+  if (leagueValue) {
+    detailParams.set(
+      "league",
+      leagueValue
+    );
+  }
+
+  detailParams.set(
+    "season",
+    String(seasonValue)
+  );
+
+  detailParams.set(
+    "torneo",
+    torneoValue
+  );
+
+  // IMPORTANTE:
+  // NO abre ESPN.
+  // Va al HTML de detalle que utiliza detail.js.
+  window.location.href =
+    `detail.html?${detailParams.toString()}`;
+}
+
+// ============================================================
+// CLIC EN PARTIDO
+// ============================================================
+
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const card =
+      event.target.closest(
+        ".match[data-match-id]"
+      );
+
+    if (!card) {
+      return;
+    }
+
+    openMatchDetail(
+      card.dataset.matchId,
+      {
+        category:
+          card.dataset.category,
+
+        league:
+          card.dataset.league,
+
+        season:
+          Number(
+            card.dataset.season ||
+            state.season
+          ),
+
+        torneo:
+          card.dataset.torneo
+      }
+    );
+  }
+);
+
+// ============================================================
+// ENTER EN PARTIDO
+// ============================================================
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+
+    if (
+      event.key !== "Enter" &&
+      event.key !== " "
+    ) {
+      return;
+    }
+
+    const card =
+      event.target.closest(
+        ".match[data-match-id]"
+      );
+
+    if (!card) {
+      return;
+    }
+
+    event.preventDefault();
+
+    openMatchDetail(
+      card.dataset.matchId,
+      {
+        category:
+          card.dataset.category,
+
+        league:
+          card.dataset.league,
+
+        season:
+          Number(
+            card.dataset.season ||
+            state.season
+          ),
+
+        torneo:
+          card.dataset.torneo
+      }
+    );
+  }
+);
 
 // ============================================================
 // HORA
@@ -1073,7 +1749,6 @@ function formatHour(iso) {
   );
 }
 
-
 // ============================================================
 // RELOJ DE PARTIDOS
 // ============================================================
@@ -1084,54 +1759,64 @@ function updateLiveMatches() {
     false;
 
   state.matches =
-    state.matches.map((match) => {
+    state.matches.map(
+      (match) => {
 
-      if (!match.isLive) {
-        return match;
-      }
+        if (!match.isLive) {
+          return match;
+        }
 
-      hasLive = true;
+        hasLive = true;
 
-      const baseMinute =
-        Number(match.minute || 0);
+        const baseMinute =
+          Number(
+            match.minute || 0
+          );
 
-      const baseSecond =
-        Number(match.second || 0);
+        const baseSecond =
+          Number(
+            match.second || 0
+          );
 
-      if (!match._clockStarted) {
+        if (!match._clockStarted) {
+
+          return {
+            ...match,
+
+            _clockStarted:
+              Date.now(),
+
+            _baseSeconds:
+              baseMinute * 60 +
+              baseSecond
+          };
+        }
+
+        const elapsed =
+          Math.floor(
+            (
+              Date.now() -
+              match._clockStarted
+            ) / 1000
+          );
+
+        const total =
+          match._baseSeconds +
+          elapsed;
 
         return {
           ...match,
-          _clockStarted: Date.now(),
-          _baseSeconds:
-            baseMinute * 60 +
-            baseSecond
+
+          minute:
+            Math.floor(
+              total / 60
+            ),
+
+          second:
+            total % 60
         };
-
       }
-
-      const elapsed =
-        Math.floor(
-          (Date.now() -
-            match._clockStarted) /
-          1000
-        );
-
-      const total =
-        match._baseSeconds +
-        elapsed;
-
-      return {
-        ...match,
-
-        minute:
-          Math.floor(total / 60),
-
-        second:
-          total % 60
-      };
-
-    });
+    );
 
   if (hasLive) {
 
@@ -1141,11 +1826,8 @@ function updateLiveMatches() {
       "Hay partidos en vivo",
       "live"
     );
-
   }
-
 }
-
 
 // ============================================================
 // ESCAPE HTML
@@ -1153,14 +1835,34 @@ function updateLiveMatches() {
 
 function escapeHtml(value) {
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
 
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
 
 // ============================================================
 // CARGA GENERAL
@@ -1191,20 +1893,18 @@ async function loadTournament() {
       "Cargando torneo..."
     );
 
-    /*
-     * Tabla y partidos se cargan en paralelo.
-     */
+    // ======================================================
+    // TABLA + PARTIDOS EN PARALELO
+    // ======================================================
 
     const [
-      ,
+      _standings,
       matches
-    ] = await Promise.all([
-
-      loadStandings(),
-
-      fetchTournamentMatches()
-
-    ]);
+    ] =
+      await Promise.all([
+        loadStandings(),
+        fetchTournamentMatches()
+      ]);
 
     state.matches =
       matches;
@@ -1219,7 +1919,8 @@ async function loadTournament() {
 
     const live =
       state.matches.some(
-        (match) => match.isLive
+        match =>
+          match.isLive
       );
 
     setStatus(
@@ -1242,30 +1943,38 @@ async function loadTournament() {
       "No se pudieron cargar los datos."
     );
 
-    standingsBody.innerHTML = `
-      <tr>
-        <td colspan="5" class="error">
-          Error cargando la tabla.
-        </td>
-      </tr>
-    `;
+    if (standingsBody) {
 
-    matchesContainer.innerHTML = `
-      <div class="error">
-        Error cargando los partidos.
-      </div>
-    `;
+      standingsBody.innerHTML = `
+        <tr>
+          <td
+            colspan="5"
+            class="error"
+          >
+            Error cargando la tabla.
+          </td>
+        </tr>
+      `;
+    }
+
+    if (matchesContainer) {
+
+      matchesContainer.innerHTML = `
+        <div class="error">
+          Error cargando los partidos.
+        </div>
+      `;
+    }
 
   } finally {
 
-    state.loading = false;
-
+    state.loading =
+      false;
   }
 }
 
-
 // ============================================================
-// EVENTOS
+// BUSCADOR
 // ============================================================
 
 searchEl?.addEventListener(
@@ -1277,10 +1986,12 @@ searchEl?.addEventListener(
 
     renderStandings();
     renderMatches();
-
   }
 );
 
+// ============================================================
+// VOLVER
+// ============================================================
 
 backButton?.addEventListener(
   "click",
@@ -1297,13 +2008,11 @@ backButton?.addEventListener(
 
     window.location.href =
       "./index.html";
-
   }
 );
 
-
 // ============================================================
-// POLLING
+// ACTUALIZACIÓN DE PARTIDOS EN VIVO
 // ============================================================
 
 setInterval(
@@ -1311,52 +2020,39 @@ setInterval(
 
     const hasLive =
       state.matches.some(
-        (match) => match.isLive
+        match =>
+          match.isLive
       );
 
-    /*
-     * Si hay un partido en vivo,
-     * actualizamos datos de ESPN.
-     */
-
-    if (hasLive) {
-
-      try {
-
-        const matches =
-          await fetchTournamentMatches();
-
-        state.matches =
-          matches;
-
-        renderMatches();
-
-        state.lastUpdated =
-          new Date();
-
-        setLastUpdate();
-
-      } catch (error) {
-
-        console.error(
-          "Error actualizando torneo:",
-          error
-        );
-
-      }
-
+    if (!hasLive) {
       return;
     }
 
-    /*
-     * Sin partidos en vivo no hace falta
-     * pegarle a ESPN constantemente.
-     */
+    try {
+
+      const matches =
+        await fetchTournamentMatches();
+
+      state.matches =
+        matches;
+
+      state.lastUpdated =
+        new Date();
+
+      renderMatches();
+      setLastUpdate();
+
+    } catch (error) {
+
+      console.error(
+        "Error actualizando torneo:",
+        error
+      );
+    }
 
   },
   15000
 );
-
 
 // ============================================================
 // RELOJ LOCAL
@@ -1366,7 +2062,6 @@ setInterval(
   updateLiveMatches,
   1000
 );
-
 
 // ============================================================
 // INICIO

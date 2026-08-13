@@ -165,3 +165,33 @@
 
     animation: dotPulse 1.4s ease-in-out infinite;
 }
+
+/* La portada se concentra en la cartelera diaria; las tablas continúan
+   disponibles al entrar a una competencia desde el lateral. */
+body.home-mode .layout {
+    grid-template-columns: 240px minmax(0, 1fr) !important;
+}
+
+body.home-mode .panel-matches {
+    grid-column: 2 / -1 !important;
+    max-width: 900px;
+}
+
+body.home-mode .panel-table {
+    display: none;
+}
+
+/* Al elegir una liga, la cartelera queda filtrada por día y vuelve a
+   mostrarse su tabla, sin perder el control de fechas. */
+body.home-mode.has-selected-league .layout {
+    grid-template-columns: 240px minmax(0, 1.8fr) 330px !important;
+}
+
+body.home-mode.has-selected-league .panel-matches {
+    grid-column: 2 / 3 !important;
+    max-width: none;
+}
+
+body.home-mode.has-selected-league .panel-table {
+    display: block;
+}

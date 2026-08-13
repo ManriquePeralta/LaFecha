@@ -232,6 +232,11 @@ function renderMatches() {
 
   let source = [];
 
+  if (state.isHomeMode) {
+    renderHomeMatches();
+    return;
+  }
+
   if (state.isEspnLeague) {
     source = state.currentMatches || [];
   } else {
@@ -317,6 +322,50 @@ function renderMatches() {
     .join("");
 }
 
+function renderHomeMatches() {
+  if (!matchesList) return;
+
+  if (matchesTitle) {
+    const firstMatch = state.homeMatches?.[0];
+    matchesTitle.textContent = state.homeLeagueFilter && firstMatch
+      ? firstMatch.competition
+      : state.homeLeagueFilter
+        ? state.homeLeagueName
+        : "Partidos del día";
+  }
+
+  const filtered = (state.homeMatches || []).filter((m) => {
+    const local = m.local || m.homeName || "";
+    const visitante = m.visitante || m.awayName || "";
+    const isLive = m.estado === "En juego" || m.statusType === "in" || m.isLive;
+    return (!state.liveOnly || isLive) && bySearch(local, visitante);
+  });
+
+  if (!filtered.length) {
+    matchesList.innerHTML = '<p class="empty">No hay partidos programados para esta fecha.</p>';
+    return;
+  }
+
+  const groups = new Map();
+  filtered.forEach((match) => {
+    const key = `${match.competitionPriority}:${match.competition}`;
+    if (!groups.has(key)) groups.set(key, { name: match.competition, items: [] });
+    groups.get(key).items.push(match);
+  });
+
+  matchesList.innerHTML = [...groups.values()]
+    .map((group) => `
+      <section class="competition-group">
+        <div class="competition-header">
+          <span>${group.name}</span>
+          <span>${group.items.length} partido${group.items.length === 1 ? "" : "s"}</span>
+        </div>
+        ${group.items.map((match) => matchCardHtml(match, match.statusType === "pre" ? "proximos" : "resultados")).join("")}
+      </section>
+    `)
+    .join("");
+}
+
 // ==========================================
 // EXPORTS
 // ==========================================
@@ -324,5 +373,6 @@ function renderMatches() {
 export {
   matchCardHtml,
   groupByFecha,
+  renderHomeMatches,
   renderMatches
 };

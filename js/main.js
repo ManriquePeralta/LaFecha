@@ -25,7 +25,8 @@ import {
   loadCategoryData,
   loadCache,
   setLiveBanner,
-  setDate
+  setDate,
+  loadHomeMatches
 } from "./data-loader.js";
 
 import {
@@ -390,6 +391,11 @@ let autoRefreshTimer = null;
 function triggerAutoRefresh() {
   if (document.hidden) return;
 
+  if (state.isHomeMode) {
+    loadHomeMatches(state.homeDate || new Date());
+    return;
+  }
+
   if (
     state.isEspnLeague &&
     state.espnLeagueCode
@@ -669,7 +675,6 @@ if (!isDetailPage) {
       header.addEventListener(
         "click",
         () => {
-
           const item =
             header.closest(
               ".accordion-item"
@@ -718,6 +723,25 @@ if (!isDetailPage) {
         "click",
         () => {
 
+          const category = btn.dataset.category;
+          const leagueCode = btn.dataset.league;
+
+          // La competencia seleccionada conserva el selector de fecha, pero
+          // el feed diario pasa a traer solamente esa liga.
+          state.isHomeMode = true;
+          state.homeLeagueFilter = category === "espn"
+            ? leagueCode
+            : category === "segunda"
+              ? "arg.2"
+              : "arg.1";
+          state.homeLeagueName = btn.textContent.trim();
+          state.homeDate = state.homeDate || new Date();
+          state.homeDate.setHours(0, 0, 0, 0);
+          document.body.classList.add("home-mode", "has-selected-league");
+          document.getElementById("home-date-nav")?.removeAttribute("hidden");
+          renderHomeDate(state.homeDate);
+          loadHomeMatches(state.homeDate);
+
           document
             .querySelectorAll(
               ".segment-btn"
@@ -732,14 +756,6 @@ if (!isDetailPage) {
           btn.classList.add(
             "active"
           );
-
-
-          const category =
-            btn.dataset.category;
-
-          const leagueCode =
-            btn.dataset.league;
-
 
           // -----------------------------------------
           // ESPN
@@ -899,6 +915,8 @@ if (!isDetailPage) {
         "click",
         () => {
 
+          if (state.isHomeMode) return;
+
           state.view =
             btn.dataset.view;
 
@@ -1008,6 +1026,55 @@ if (!isDetailPage) {
       }
     );
   }
+
+  // =======================================================
+  // NAVEGACIÓN DE FECHAS EN LA PORTADA
+  // =======================================================
+
+  const homeDateLabel = document.getElementById("home-date-label");
+
+  function renderHomeDate(date) {
+    if (!homeDateLabel) return;
+    const label = new Intl.DateTimeFormat("es-AR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long"
+    }).format(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    homeDateLabel.textContent = date.getTime() === today.getTime()
+      ? "PARTIDOS DE HOY"
+      : label.toUpperCase();
+  }
+
+  function moveHomeDate(days) {
+    const current = state.homeDate || new Date();
+    const next = new Date(current);
+    next.setDate(next.getDate() + days);
+    renderHomeDate(next);
+    loadHomeMatches(next);
+  }
+
+  document.getElementById("home-date-prev")?.addEventListener("click", () => moveHomeDate(-1));
+  document.getElementById("home-date-next")?.addEventListener("click", () => moveHomeDate(1));
+
+  document.getElementById("all-matches-btn")?.addEventListener("click", () => {
+    state.isHomeMode = true;
+    state.homeLeagueFilter = null;
+    state.homeLeagueName = "";
+    state.isEspnLeague = false;
+    state.espnLeagueCode = null;
+    state.homeDate = state.homeDate || new Date();
+    state.homeDate.setHours(0, 0, 0, 0);
+
+    document.body.classList.add("home-mode");
+    document.body.classList.remove("has-selected-league");
+    document.getElementById("home-date-nav")?.removeAttribute("hidden");
+    document.querySelectorAll(".segment-btn.active").forEach((btn) => btn.classList.remove("active"));
+    window.history.replaceState(null, "", window.location.pathname);
+    renderHomeDate(state.homeDate);
+    loadHomeMatches(state.homeDate);
+  });
 
 
   // =======================================================
@@ -1243,13 +1310,23 @@ if (!isDetailPage) {
     );
 
   } else {
-
-    renderAll();
-
-    loadCategoryData(
-      state.category || "primera",
-      true
-    );
+    // Sin una competencia en la URL, index es la portada diaria.
+    const hasCompetitionInUrl = new URLSearchParams(window.location.search).has("category");
+    if (!hasCompetitionInUrl) {
+      state.isHomeMode = true;
+      state.homeLeagueFilter = null;
+      state.homeLeagueName = "";
+      state.homeDate = new Date();
+      state.homeDate.setHours(0, 0, 0, 0);
+      document.body.classList.add("home-mode");
+      document.body.classList.remove("has-selected-league");
+      document.getElementById("home-date-nav")?.removeAttribute("hidden");
+      renderHomeDate(state.homeDate);
+      loadHomeMatches(state.homeDate);
+    } else {
+      renderAll();
+      loadCategoryData(state.category || "primera", true);
+    }
   }
 
 

@@ -1,4 +1,4 @@
-import { CACHE_KEY, CACHE_TTL_MS, CURRENT_SEASON, SPLIT_SEASON_MIN_YEAR, API } from "./config.js";
+import { CACHE_KEY, CACHE_TTL_MS, CURRENT_SEASON, SPLIT_SEASON_MIN_YEAR, API, HOME_LEAGUES } from "./config.js";
 import { db, state, cacheKey } from "./state.js";
 import { $, liveStatus, refreshBtn, isDetailPage } from "./dom.js";
 import { getDateRangeParam, noCacheFetch, normalize } from "./utils.js";
@@ -39,6 +39,80 @@ function setLiveBanner(extra) {
 
   liveStatus.textContent =
     `${sourceText}${updatedText}${extra ? ` | ${extra}` : ""}`;
+}
+
+function homeDateParam(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+// Carga exclusivamente los encuentros del día elegido para la portada.
+// Cada tarjeta conserva liga/categoría para abrir luego su detalle correcto.
+async function loadHomeMatches(date = new Date()) {
+  const dateParam = homeDateParam(date);
+
+  state.isHomeMode = true;
+  state.homeDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  state.homeMatches = [];
+
+  if (!isDetailPage) {
+    renderMatches();
+  }
+
+  try {
+    const selectedLeague = HOME_LEAGUES.find(
+      (league) => league.code === state.homeLeagueFilter
+    );
+    const leagues = state.homeLeagueFilter
+      ? [selectedLeague || {
+          code: state.homeLeagueFilter,
+          name: state.homeLeagueName || "Competencia",
+          category: "espn",
+          priority: 0
+        }]
+      : HOME_LEAGUES;
+
+    const results = await Promise.all(
+      leagues.map(async (league) => {
+        try {
+          const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league.code}/scoreboard?dates=${dateParam}`;
+          const response = await noCacheFetch(url);
+          if (!response.ok) return [];
+
+          const parsed = parseScoreboard(await response.json());
+          return parsed.all.map((match) => ({
+            ...match,
+            league: league.code,
+            category: league.category,
+            competition: league.name,
+            competitionPriority: league.priority
+          }));
+        } catch (error) {
+          console.warn(`No se pudo cargar ${league.name}:`, error);
+          return [];
+        }
+      })
+    );
+
+    state.homeMatches = results
+      .flat()
+      .sort((a, b) =>
+        a.competitionPriority - b.competitionPriority ||
+        new Date(a.date) - new Date(b.date)
+      );
+
+    state.source = "live";
+    state.lastUpdated = new Date();
+    setLiveBanner();
+  } catch (error) {
+    console.error("Error al cargar la portada diaria:", error);
+    state.source = "fallback";
+    setLiveBanner("error de API");
+  } finally {
+    if (!isDetailPage) renderMatches();
+  }
 }
 
 function saveCache() {
@@ -629,6 +703,7 @@ export {
   loadAnnualAndAverages,
   loadCategoryData,
   hasLiveMatch,
+  loadHomeMatches,
 
   // Reloj de partidos
   isMatchLive,

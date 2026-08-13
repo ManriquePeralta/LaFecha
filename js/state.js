@@ -15,7 +15,12 @@ const state = {
   isLoading: false,
   source: "fallback",
   lastUpdated: null,
-  loaded: {}
+  loaded: {},
+  homeDate: null,
+  homeMatches: [],
+  homeLeagueFilter: null,
+  homeLeagueName: "",
+  isHomeMode: false
 };
 
 function cacheKey() {

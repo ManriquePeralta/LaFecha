@@ -382,6 +382,7 @@ main.layout {
     </div>
 
     <p class="live-banner" id="live-status">Conectando datos en vivo...</p>
+    <button class="all-matches-btn" id="all-matches-btn" type="button">Todos los partidos</button>
 
     <!-- ACORDEÓN DE PAÍSES COMPACTO -->
 <div class="league-accordion" role="tablist" aria-label="Competencias">
@@ -584,6 +585,11 @@ main.layout {
     <div class="section-title-wrap">
       <h2 class="section-title" id="matches-title">Resultados</h2>
     </div>
+    <nav class="home-date-nav" id="home-date-nav" aria-label="Elegir fecha" hidden>
+      <button id="home-date-prev" type="button" aria-label="Ver día anterior">‹</button>
+      <strong id="home-date-label">PARTIDOS DE HOY</strong>
+      <button id="home-date-next" type="button" aria-label="Ver día siguiente">›</button>
+    </nav>
     <div id="matches-list" class="matches-list" aria-live="polite"></div>
   </section>
 

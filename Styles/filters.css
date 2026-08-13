@@ -121,6 +121,27 @@
     margin-top: 0.85rem;
 }
 
+.all-matches-btn {
+    width: 100%;
+    margin: 0 0 .75rem;
+    padding: .52rem .65rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.all-matches-btn:hover,
+.all-matches-btn:focus-visible {
+    background: var(--ink);
+    color: var(--paper-raised);
+}
+
 @keyframes sweepOnce {
     from {
         left: -60%;

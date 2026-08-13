@@ -375,3 +375,61 @@
     font-family: var(--font-mono);
     font-size: 0.82rem;
 }
+
+/* Portada diaria: competencias agrupadas, como una cartelera de partidos. */
+.home-date-nav {
+    min-height: 3.1rem;
+    margin: -0.1rem 0 0.9rem;
+    padding: 0 0.25rem;
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 2.5rem;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid var(--rule-strong);
+}
+
+.home-date-nav button {
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 2rem/1 var(--font-display);
+    cursor: pointer;
+}
+
+.home-date-nav strong {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    letter-spacing: .04em;
+}
+
+.competition-group + .competition-group { margin-top: 0.9rem; }
+
+.competition-header {
+    padding: .48rem .65rem;
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    background: var(--ink);
+    color: var(--paper-raised);
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: .025em;
+    text-transform: uppercase;
+}
+
+.competition-header span:last-child {
+    font-family: var(--font-mono);
+    font-size: .67rem;
+    align-self: center;
+    white-space: nowrap;
+}
+
+.competition-group .match-card {
+    border-radius: 0;
+    border-top: 0;
+}
+
+.competition-group .match-card:last-child {
+    border-radius: 0 0 var(--radius) var(--radius);
+}

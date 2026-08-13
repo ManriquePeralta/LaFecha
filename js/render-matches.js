@@ -356,10 +356,10 @@ function renderHomeMatches() {
   matchesList.innerHTML = [...groups.values()]
     .map((group) => `
       <section class="competition-group">
-        <div class="competition-header">
-          <span>${group.name}</span>
+        <button class="competition-header" type="button" data-open-tournament data-category="${group.items[0].category}" data-league="${group.items[0].league}" aria-label="Abrir ${group.name}">
+          <span><b class="competition-icon" aria-hidden="true">${group.items[0].competitionIcon || "⚽"}</b>${group.name}</span>
           <span>${group.items.length} partido${group.items.length === 1 ? "" : "s"}</span>
-        </div>
+        </button>
         ${group.items.map((match) => matchCardHtml(match, match.statusType === "pre" ? "proximos" : "resultados")).join("")}
       </section>
     `)

@@ -405,6 +405,8 @@
 .competition-group + .competition-group { margin-top: 0.9rem; }
 
 .competition-header {
+    width: 100%;
+    border: 0;
     padding: .48rem .65rem;
     display: flex;
     justify-content: space-between;
@@ -416,7 +418,15 @@
     font-size: 1.05rem;
     letter-spacing: .025em;
     text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: filter .15s ease, transform .15s ease;
 }
+
+.competition-header:hover,
+.competition-header:focus-visible { filter: brightness(1.22); transform: translateY(-1px); }
+.competition-header > span:first-child { display: inline-flex; align-items: center; gap: .4rem; }
+.competition-icon { color: var(--gold); font-size: .9rem; }
 
 .competition-header span:last-child {
     font-family: var(--font-mono);

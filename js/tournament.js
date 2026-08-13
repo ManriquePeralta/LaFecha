@@ -90,6 +90,21 @@ const searchEl =
 const backButton =
   document.querySelector("#back-button");
 
+const cupStructurePanel =
+  document.querySelector("#cup-structure-panel");
+
+const cupStructureContent =
+  document.querySelector("#cup-structure-content");
+
+const cupStructureDescription =
+  document.querySelector("#cup-structure-description");
+
+const standingsPanel =
+  document.querySelector("#standings-panel");
+
+const tournamentContentGrid =
+  document.querySelector("#tournament-content-grid");
+
 // ============================================================
 // CONFIGURACIÓN DE COMPETENCIA
 // ============================================================
@@ -108,7 +123,15 @@ function getLeagueCode() {
 
 function tournamentName() {
   if (isEspnLeague) {
-    return "Competencia";
+    const names = {
+      "arg.copa": "Copa Argentina",
+      "conmebol.libertadores": "Copa Libertadores",
+      "conmebol.sudamericana": "Copa Sudamericana",
+      "uefa.champions": "Champions League",
+      "uefa.europa": "Europa League",
+      "uefa.europa.conf": "Conference League"
+    };
+    return names[espnLeagueCode] || "Competencia";
   }
 
   if (category === "segunda") {
@@ -138,7 +161,7 @@ function renderHeader() {
 
   const competition =
     isEspnLeague
-      ? "ESPN"
+      ? tournamentName()
       : category === "segunda"
         ? "Primera Nacional"
         : "Primera División";
@@ -518,7 +541,16 @@ function parseScoreboardEvents(json) {
     const second =
       Number.isFinite(clock)
         ? Math.floor(clock % 60)
-        : 0;
+      : 0;
+
+    const stage = deriveCupStage(
+      competition?.notes?.[0]?.headline ||
+      competition?.notes?.[0]?.text ||
+      event?.seasonType?.name ||
+      event?.season?.type?.name ||
+      competition?.type?.text ||
+      ""
+    );
 
     return {
 
@@ -586,9 +618,25 @@ function parseScoreboardEvents(json) {
         state.season,
 
       torneo:
-        state.torneo
+        state.torneo,
+
+      stage
     };
   });
+}
+
+// ESPN suele describir cada vuelta con frases diferentes (por ejemplo,
+// "2nd leg - X advances..."). Para el cuadro necesitamos la ronda común,
+// no un encabezado distinto por cada partido.
+function deriveCupStage(value) {
+  const text = normalize(value);
+  if (/octav|round of 16/.test(text)) return "Octavos de final";
+  if (/cuart|quarter/.test(text)) return "Cuartos de final";
+  if (/semi/.test(text)) return "Semifinales";
+  if (/final/.test(text) && !/quarter|semi/.test(text)) return "Final";
+  if (/grupo|group|league phase|fase liga/.test(text)) return "Fase de grupos";
+  if (/prelim|clasific|qualif|repech|first leg|second leg|1st leg|2nd leg/.test(text)) return "Fase clasificatoria";
+  return "Fixture";
 }
 
 // ============================================================
@@ -948,7 +996,7 @@ function normalizeEspnEntry(entry) {
 
 function normalizeRows(rows) {
 
-  return rows.map((team) => {
+  const normalized = rows.map((team) => {
 
     // Ya está normalizado
     if (
@@ -1067,6 +1115,16 @@ function normalizeRows(rows) {
         )
     };
   });
+
+  // No dependemos del orden recibido: algunas respuestas de ESPN llegan
+  // ordenadas por identificador y no por la clasificación deportiva.
+  return normalized.sort((a, b) =>
+    b.pts - a.pts ||
+    b.dg - a.dg ||
+    b.gf - a.gf ||
+    b.pg - a.pg ||
+    a.equipo.localeCompare(b.equipo, "es")
+  );
 }
 
 // ============================================================
@@ -1267,8 +1325,7 @@ function renderMatches() {
   const needle =
     normalize(state.search);
 
-  const filtered =
-    state.matches.filter(
+  const filtered = state.matches.filter(
       (match) => {
 
         if (!needle) {
@@ -1287,8 +1344,7 @@ function renderMatches() {
       }
     );
 
-  state.filteredMatches =
-    filtered;
+  state.filteredMatches = filtered;
 
   if (!filtered.length) {
 
@@ -1301,17 +1357,214 @@ function renderMatches() {
     return;
   }
 
-  const groups =
-    groupMatchesByDate(
-      filtered
-    );
+  const now = new Date();
+  const results = filtered
+    .filter((match) => match.isCompleted || new Date(match.dateIso) < now)
+    .sort((a, b) => new Date(b.dateIso) - new Date(a.dateIso));
+  const upcoming = filtered
+    .filter((match) => !match.isCompleted && new Date(match.dateIso) >= now)
+    .sort((a, b) => new Date(a.dateIso) - new Date(b.dateIso));
 
-  matchesContainer.innerHTML =
-    groups
-      .map(
-        renderMatchGroup
-      )
-      .join("");
+  matchesContainer.innerHTML = `
+    <div class="fixture-sections">
+      ${renderFixtureSection("results", "Resultados", results, "Sin resultados recientes.")}
+      ${renderFixtureSection("upcoming", "Próximos partidos", upcoming, "No hay próximos partidos programados.")}
+    </div>`;
+}
+
+const FIXTURE_PAGE_SIZE = 5;
+
+function renderFixtureSection(key, title, matches, emptyText) {
+  const visible = matches.slice(0, FIXTURE_PAGE_SIZE);
+  const hidden = matches.slice(FIXTURE_PAGE_SIZE);
+  const hiddenId = `fixture-${key}-hidden`;
+  return `
+    <section class="fixture-section">
+      <h3 class="fixture-section-title">${title}</h3>
+      ${visible.length ? visible.map(renderFixtureItem).join("") : `<p class="empty">${emptyText}</p>`}
+      ${hidden.length ? `<div id="${hiddenId}" class="fixture-hidden">${hidden.map(renderFixtureItem).join("")}</div>` : ""}
+      ${hidden.length ? `<button class="fixture-more" type="button" data-fixture-target="${hiddenId}">Ver más⌄</button>` : ""}
+    </section>`;
+}
+
+function renderFixtureItem(match) {
+  const date = match.dateIso ? new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "2-digit", month: "short" }).format(new Date(match.dateIso)) : "Fecha a confirmar";
+  const score = match.isCompleted ? `${match.gl ?? "-"} - ${match.gv ?? "-"}` : "Programado";
+  return `
+    <article class="fixture-item match" data-match-id="${escapeAttribute(match.id)}" data-category="${escapeAttribute(match.category || state.category)}" data-league="${escapeAttribute(match.league || state.leagueCode)}" data-season="${state.season}" data-torneo="${escapeAttribute(state.torneo)}">
+      <time>${escapeHtml(date)}</time>
+      <span>${escapeHtml(match.local)}</span>
+      <strong class="fixture-score">${score}</strong>
+      <span class="away">${escapeHtml(match.visitante)}</span>
+    </article>`;
+}
+
+// El fixture completo se conserva en state.matches para grupos y llaves,
+// pero la columna principal funciona como agenda: reciente + próximos.
+function getRelevantMatches(matches) {
+  const now = new Date();
+  const from = new Date(now);
+  from.setDate(from.getDate() - 14);
+  const to = new Date(now);
+  to.setDate(to.getDate() + 35);
+
+  const nearby = matches.filter((match) => {
+    const date = new Date(match.dateIso || 0);
+    return !Number.isNaN(date.getTime()) && date >= from && date <= to;
+  });
+
+  if (nearby.length) return nearby;
+
+  // Fuera de temporada: mostramos los encuentros más cercanos a hoy en vez
+  // de obligar a empezar el listado en febrero o enero.
+  return [...matches]
+    .filter((match) => match.dateIso)
+    .sort((a, b) =>
+      Math.abs(new Date(a.dateIso) - now) -
+      Math.abs(new Date(b.dateIso) - now)
+    )
+    .slice(0, 16)
+    .sort((a, b) => new Date(a.dateIso) - new Date(b.dateIso));
+}
+
+// ============================================================
+// COPAS: GRUPOS Y CRUCES
+// ============================================================
+
+function isCupCompetition() {
+  return [
+    "arg.copa",
+    "conmebol.libertadores",
+    "conmebol.sudamericana",
+    "uefa.champions",
+    "uefa.europa",
+    "uefa.europa.conf"
+  ].includes(state.leagueCode);
+}
+
+function renderCupStructure() {
+  if (!cupStructurePanel || !cupStructureContent) return;
+
+  if (!isCupCompetition()) {
+    cupStructurePanel.hidden = true;
+    standingsPanel?.removeAttribute("hidden");
+    tournamentContentGrid?.classList.remove("cup-layout");
+    return;
+  }
+
+  cupStructurePanel.hidden = false;
+  // Las minitablas de abajo son la tabla de grupos de la copa. Evitamos
+  // repetir exactamente los mismos datos en una tabla grande lateral.
+  standingsPanel?.setAttribute("hidden", "");
+  tournamentContentGrid?.classList.add("cup-layout");
+
+  const groups = (state.standingsZones || [])
+    .filter((zone) => Array.isArray(zone.tabla) && zone.tabla.length);
+
+  const stages = new Map();
+  state.matches.forEach((match) => {
+    const name = String(match.stage || "Partidos").trim();
+    if (!stages.has(name)) stages.set(name, []);
+    stages.get(name).push(match);
+  });
+
+  const groupsHtml = groups.length
+    ? `
+      <section>
+        <h3 class="cup-section-title">Grupos</h3>
+        <div class="cup-groups-grid">
+          ${groups.map((group) => `
+            <article class="cup-group-card">
+              <h4>${escapeHtml(group.nombre)}</h4>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>Equipo</th><th>PTS</th><th>PJ</th><th>DG</th></tr></thead>
+                  <tbody>
+                    ${group.tabla.map((team, index) => `
+                      <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="team"><img class="team-logo" src="${escapeAttribute(team.logo || PLACEHOLDER_LOGO)}" alt="">${escapeHtml(team.equipo)}</span></td>
+                        <td class="pts">${Number(team.pts || 0)}</td>
+                        <td>${Number(team.pj || 0)}</td>
+                        <td>${Number(team.dg || 0) > 0 ? "+" : ""}${Number(team.dg || 0)}</td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      </section>`
+    : "";
+
+  const sortedStages = [...stages.entries()].sort(
+    ([a], [b]) => cupStageOrder(a) - cupStageOrder(b) || a.localeCompare(b, "es")
+  );
+
+  const knockoutStages = sortedStages.filter(
+    ([stage]) => !["Fixture", "Fase de grupos"].includes(stage)
+  );
+
+  const stagesHtml = knockoutStages.length
+    ? `
+      <section${groups.length ? ' style="margin-top:1.15rem"' : ""}>
+        <h3 class="cup-section-title">Cruces y fases</h3>
+        <div class="cup-stage-list cup-bracket">
+          ${knockoutStages.map(([stage, matches]) => `
+            <article class="cup-stage cup-bracket-round">
+              <h4>${escapeHtml(stage)}</h4>
+              ${renderCupTies(matches)}
+            </article>
+          `).join("")}
+        </div>
+      </section>`
+    : '<p class="empty">La API todavía no identificó una fase eliminatoria para armar la llave. Los grupos y el fixture siguen disponibles arriba.</p>';
+
+  cupStructureDescription.textContent = groups.length
+    ? "Tablas por grupo y cruces del fixture"
+    : "Cruces disponibles en el fixture";
+  cupStructureContent.innerHTML = groupsHtml + stagesHtml;
+}
+
+function renderCupTies(matches) {
+  const ties = new Map();
+
+  matches.forEach((match) => {
+    const key = [normalize(match.local), normalize(match.visitante)].sort().join("|");
+    if (!ties.has(key)) ties.set(key, []);
+    ties.get(key).push(match);
+  });
+
+  return [...ties.values()]
+    .sort((a, b) => new Date(a[0].dateIso) - new Date(b[0].dateIso))
+    .map((tieMatches) => {
+      const first = tieMatches[0];
+      const home = first.local;
+      const away = first.visitante;
+      const homeTotal = tieMatches.reduce((sum, match) => sum + (match.local === home ? Number(match.gl || 0) : Number(match.gv || 0)), 0);
+      const awayTotal = tieMatches.reduce((sum, match) => sum + (match.local === away ? Number(match.gl || 0) : Number(match.gv || 0)), 0);
+      const isComplete = tieMatches.every((match) => match.isCompleted);
+
+      return `
+        <article class="cup-tie">
+          <div><span>${escapeHtml(home)}</span><strong>${isComplete ? homeTotal : "-"}</strong></div>
+          <div><span>${escapeHtml(away)}</span><strong>${isComplete ? awayTotal : "-"}</strong></div>
+          <small>${tieMatches.length === 2 ? "Serie ida y vuelta" : "Partido único / pendiente"}</small>
+        </article>`;
+    })
+    .join("");
+}
+
+function cupStageOrder(stage) {
+  const name = normalize(stage);
+  if (/prelim|clasific|repech/.test(name)) return 0;
+  if (/grupo|group|league phase|fase liga/.test(name)) return 1;
+  if (/octav|round of 16|dieciseis/.test(name)) return 2;
+  if (/cuart|quarter/.test(name)) return 3;
+  if (/semi/.test(name)) return 4;
+  if (/final/.test(name)) return 5;
+  return 6;
 }
 
 // ============================================================
@@ -1649,6 +1902,15 @@ document.addEventListener(
   "click",
   (event) => {
 
+    const moreButton = event.target.closest("[data-fixture-target]");
+    if (moreButton) {
+      const target = document.getElementById(moreButton.dataset.fixtureTarget);
+      if (!target) return;
+      const isOpen = target.classList.toggle("fixture-hidden");
+      moreButton.textContent = isOpen ? "Ver más⌄" : "Ver menos⌃";
+      return;
+    }
+
     const card =
       event.target.closest(
         ".match[data-match-id]"
@@ -1914,6 +2176,7 @@ async function loadTournament() {
 
     renderStandings();
     renderMatches();
+    renderCupStructure();
 
     setLastUpdate();
 

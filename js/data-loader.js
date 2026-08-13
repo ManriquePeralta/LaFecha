@@ -85,9 +85,10 @@ async function loadHomeMatches(date = new Date()) {
           return parsed.all.map((match) => ({
             ...match,
             league: league.code,
-            category: league.category,
-            competition: league.name,
-            competitionPriority: league.priority
+          category: league.category,
+          competition: league.name,
+          competitionIcon: league.icon || "⚽",
+          competitionPriority: league.priority
           }));
         } catch (error) {
           console.warn(`No se pudo cargar ${league.name}:`, error);

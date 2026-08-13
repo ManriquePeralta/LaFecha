@@ -706,6 +706,10 @@ function renderEspnStandings() {
         </tbody>
       </table>
     </div>
+    <button class="tournament-link" data-open-tournament type="button">
+      Ver torneo completo
+      <span class="tournament-arrow">→</span>
+    </button>
   `;
 }
 

@@ -346,6 +346,166 @@
     border-bottom: 0;
   }
 
+  .fixture-sections { padding: .8rem; }
+  .fixture-section + .fixture-section { margin-top: .9rem; }
+  .fixture-section-title {
+    margin: 0;
+    padding: .45rem .65rem;
+    border-bottom: 2px solid var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+  }
+  .fixture-item {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem .65rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-raised);
+    font-size: .88rem;
+    font-weight: 700;
+  }
+  .fixture-item time { font-family: var(--font-mono); font-size: .65rem; text-transform: uppercase; }
+  .fixture-item .away { text-align: right; }
+  .fixture-score { padding: .1rem .42rem; background: var(--paper-dim); border: 1px solid var(--rule-strong); font-family: var(--font-mono); }
+  .fixture-more {
+    width: 100%;
+    margin-top: .55rem;
+    padding: .42rem;
+    border: 1px dashed var(--rule-strong);
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .fixture-hidden { display: none; }
+
+  /* ==========================================
+     COPAS: GRUPOS Y CUADRO DE FASES
+     ========================================== */
+
+  .cup-structure-panel { margin-top: 1.25rem; }
+
+  .cup-structure-content { padding: 1rem; }
+
+  .cup-section-title {
+    margin: 0 0 .7rem;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .cup-groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+    gap: .8rem;
+  }
+
+  .cup-group-card {
+    overflow: hidden;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper-raised);
+  }
+
+  .cup-group-card h4 {
+    margin: 0;
+    padding: .45rem .65rem;
+    background: var(--ink);
+    color: var(--paper-raised);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+  }
+
+  .cup-stage-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: .8rem;
+  }
+
+  .cup-bracket {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: .5rem;
+  }
+
+  .cup-bracket-round {
+    min-width: 220px;
+    flex: 0 0 220px;
+  }
+
+  .cup-bracket-round:nth-child(2) { margin-top: 2rem; }
+  .cup-bracket-round:nth-child(3) { margin-top: 4rem; }
+  .cup-bracket-round:nth-child(4) { margin-top: 6rem; }
+  .cup-bracket-round:nth-child(5) { margin-top: 8rem; }
+
+  .cup-tie {
+    margin: .55rem;
+    overflow: hidden;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--paper-raised);
+  }
+
+  .cup-tie div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .45rem;
+    padding: .3rem .4rem;
+    font-size: .78rem;
+    font-weight: 700;
+  }
+
+  .cup-tie div + div { border-top: 1px solid var(--rule); }
+  .cup-tie small {
+    display: block;
+    padding: .25rem .4rem;
+    background: var(--paper-dim);
+    font-family: var(--font-mono);
+    font-size: .58rem;
+    text-transform: uppercase;
+  }
+
+  .content-grid.cup-layout { grid-template-columns: minmax(0, 1fr); }
+
+  .cup-stage {
+    overflow: hidden;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+  }
+
+  .cup-stage h4 {
+    margin: 0;
+    padding: .45rem .65rem;
+    background: var(--paper-dim);
+    border-bottom: 1px solid var(--rule-strong);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+  }
+
+  .cup-cross {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: .35rem;
+    align-items: center;
+    padding: .55rem .65rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-raised);
+    font-size: .88rem;
+    font-weight: 700;
+  }
+
+  .cup-cross:last-child { border-bottom: 0; }
+  .cup-cross .away { text-align: right; }
+  .cup-cross .cup-score { font-family: var(--font-mono); font-size: .75rem; }
+
   .match:hover {
     background: var(--paper-dim);
   }
@@ -497,6 +657,9 @@
     td {
       padding: 0.3rem 0.35rem;
     }
+
+    .cup-structure-content { padding: .75rem; }
+    .fixture-item { grid-template-columns: 74px minmax(0, 1fr) auto minmax(0, 1fr); gap: .3rem; font-size: .74rem; }
   }
 </style>
 </head>
@@ -554,13 +717,13 @@
     </div>
 
 
-    <div class="content-grid">
+    <div class="content-grid" id="tournament-content-grid">
 
       <!-- ======================================
            TABLA
       ======================================= -->
 
-      <section class="panel">
+      <section class="panel" id="standings-panel">
 
         <div class="panel-header">
           <h2>Tabla de posiciones</h2>
@@ -626,6 +789,14 @@
       </section>
 
     </div>
+
+    <section class="panel cup-structure-panel" id="cup-structure-panel" hidden>
+      <div class="panel-header">
+        <h2>Grupos y cruces</h2>
+        <p id="cup-structure-description">Estructura de la competencia</p>
+      </div>
+      <div class="cup-structure-content" id="cup-structure-content"></div>
+    </section>
 
   </main>
 

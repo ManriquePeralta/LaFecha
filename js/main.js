@@ -1100,9 +1100,10 @@ if (!isDetailPage) {
         const params =
           new URLSearchParams({
             category:
-              state.isEspnLeague
+              tournamentEl.dataset.category ||
+              (state.isEspnLeague
                 ? "espn"
-                : state.category,
+                : state.category),
 
             season:
               String(
@@ -1115,14 +1116,13 @@ if (!isDetailPage) {
           });
 
 
-        if (
-          state.isEspnLeague &&
-          state.espnLeagueCode
-        ) {
+        const tournamentLeague = tournamentEl.dataset.league || state.espnLeagueCode;
+
+        if (tournamentLeague) {
 
           params.set(
             "league",
-            state.espnLeagueCode
+            tournamentLeague
           );
         }
 
